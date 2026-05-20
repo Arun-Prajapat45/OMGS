@@ -1,26 +1,12 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import dynamic from 'next/dynamic';
+import { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
-import { useSelector } from 'react-redux';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { HiPlus, HiTrash, HiX } from 'react-icons/hi';
 import toast from 'react-hot-toast';
-import { selectElements } from '@/store/slices/editorSlice';
-
-const TemplatePreview = dynamic(() => import('@/components/admin/TemplatePreviewClient'), {
-  ssr: false,
-  loading: () => (
-    <div className="w-full h-96 glass rounded-3xl flex items-center justify-center">
-      <div className="flex flex-col items-center gap-4 text-white/40">
-        <div className="w-12 h-12 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
-        <p className="text-sm">Loading template preview...</p>
-      </div>
-    </div>
-  ),
-});
+import { Stage, Layer, Rect, Circle, RegularPolygon } from 'react-konva';
 
 const templateSchema = z.object({
   name: z.string().min(1, 'Template name is required'),
@@ -74,22 +60,61 @@ const templateSchema = z.object({
     width: z.coerce.number(),
     height: z.coerce.number(),
     rotation: z.coerce.number().default(0),
-  })).optional(),
-  elements: z.array(z.object({
-    id: z.string().min(1, 'ID required'),
-    type: z.enum(['rectangle', 'rounded_rectangle', 'circle', 'hexagon', 'triangle', 'polygon']),
-    x: z.coerce.number(),
-    y: z.coerce.number(),
-    width: z.coerce.number(),
-    height: z.coerce.number(),
-    rotation: z.coerce.number().default(0),
-    zIndex: z.coerce.number().optional(),
-    locked: z.boolean().optional(),
-    visible: z.boolean().optional(),
   })).optional()
 });
 
-// Template preview is rendered by a client-only component (TemplatePreviewClient)
+// A component to render the Konva preview of the template
+const TemplatePreview = ({ width, height, regions }) => {
+  const [scale, setScale] = useState(1);
+  const containerWidth = 400; // max width for preview box
+
+  useEffect(() => {
+    if (width > 0) {
+      setScale(Math.min(containerWidth / width, 1));
+    }
+  }, [width]);
+
+  return (
+    <div className="bg-black/30 border border-white/10 rounded-xl overflow-hidden flex items-center justify-center p-4" style={{ minHeight: 300 }}>
+      {width > 0 && height > 0 ? (
+        <div className="border border-white/20 shadow-2xl bg-white/5" style={{ width: width * scale, height: height * scale }}>
+          <Stage width={width * scale} height={height * scale}>
+            <Layer>
+              {regions?.map((r, i) => {
+                const sharedProps = {
+                  x: r.x * scale,
+                  y: r.y * scale,
+                  width: r.width * scale,
+                  height: r.height * scale,
+                  rotation: r.rotation || 0,
+                  fill: 'rgba(99, 102, 241, 0.4)',
+                  stroke: 'rgba(99, 102, 241, 0.8)',
+                  strokeWidth: 2,
+                  dash: [5, 5],
+                  draggable: false,
+                };
+                const key = r.id || i;
+
+                if (r.type === 'circle') {
+                  return <Circle key={key} {...sharedProps} radius={(r.width * scale) / 2} x={(r.x * scale) + (r.width * scale)/2} y={(r.y * scale) + (r.height * scale)/2} />;
+                }
+                if (r.type === 'hexagon') {
+                  return <RegularPolygon key={key} {...sharedProps} sides={6} radius={(r.width * scale) / 2} x={(r.x * scale) + (r.width * scale)/2} y={(r.y * scale) + (r.height * scale)/2} />;
+                }
+                if (r.type === 'triangle') {
+                  return <RegularPolygon key={key} {...sharedProps} sides={3} radius={(r.width * scale) / 2} x={(r.x * scale) + (r.width * scale)/2} y={(r.y * scale) + (r.height * scale)/2} />;
+                }
+                return <Rect key={key} {...sharedProps} cornerRadius={r.type === 'rounded_rectangle' ? 20 : 0} />;
+              })}
+            </Layer>
+          </Stage>
+        </div>
+      ) : (
+        <p className="text-white/40 text-sm">Please define canvas width and height</p>
+      )}
+    </div>
+  );
+};
 
 export default function TemplateForm({ onCancel, onSuccess, template = null }) {
   const isEditing = !!template;
@@ -100,13 +125,9 @@ export default function TemplateForm({ onCancel, onSuccess, template = null }) {
       canvasWidth: 1000, canvasHeight: 1000,
       isActive: true,
       overlays: [], printSizes: [], thicknesses: [], textRegions: [], extras: [],
-      elements: []
+      editableRegions: []
     }
   });
-
-  const editorElements = useSelector(selectElements);
-  const { fields, append, remove } = useFieldArray({ control, name: 'elements' });
-  const watchRegions = watch('elements');
 
   // Populate form with template data when editing
   useEffect(() => {
@@ -127,38 +148,16 @@ export default function TemplateForm({ onCancel, onSuccess, template = null }) {
         thicknesses: json.thicknesses || [],
         textRegions: json.textRegions || [],
         extras: json.extras || [],
-        // support legacy editableRegions but prefer new `elements` key
-        elements: json.elements || json.editableRegions || []
+        editableRegions: json.editableRegions || []
       });
     }
   }, [template, reset]);
 
+  const { fields, append, remove } = useFieldArray({ control, name: 'editableRegions' });
+
   const watchCanvasWidth = watch('canvasWidth');
   const watchCanvasHeight = watch('canvasHeight');
-  const watchShape = watch('shape');
-  const watchBackgroundColor = watch('backgroundColor');
-  const watchPreviewImage = watch('previewImage');
-  const watchOverlays = watch('overlays');
-  const watchTextRegions = watch('textRegions');
-  const watchPrintSizes = watch('printSizes');
-  const watchThicknesses = watch('thicknesses');
-  const watchExtras = watch('extras');
-
-  const liveTemplate = useMemo(() => ({
-    canvas: {
-      width: watchCanvasWidth,
-      height: watchCanvasHeight,
-      backgroundColor: watchBackgroundColor || '#ffffff',
-    },
-    shape: watchShape,
-    previewImage: watchPreviewImage || '',
-    overlays: watchOverlays || [],
-    textRegions: watchTextRegions || [],
-    printSizes: watchPrintSizes || [],
-    thicknesses: watchThicknesses || [],
-    extras: watchExtras || [],
-    elements: editorElements,
-  }), [watchCanvasWidth, watchCanvasHeight, watchBackgroundColor, watchShape, watchPreviewImage, watchOverlays, watchTextRegions, watchPrintSizes, watchThicknesses, watchExtras, editorElements]);
+  const watchRegions = watch('editableRegions');
 
   const onSubmit = async (data) => {
     try {
@@ -173,7 +172,7 @@ export default function TemplateForm({ onCancel, onSuccess, template = null }) {
         },
         previewImage: data.previewImage || '',
         overlays: data.overlays || [],
-        elements: editorElements.length ? editorElements : (data.elements || []),
+        editableRegions: data.editableRegions || [],
         textRegions: data.textRegions || [],
         printSizes: data.printSizes || [],
         thicknesses: data.thicknesses || [],
@@ -262,14 +261,14 @@ export default function TemplateForm({ onCancel, onSuccess, template = null }) {
           <div className="space-y-4">
             <h3 className="text-white font-medium">Live Canvas Preview</h3>
             <p className="text-xs text-white/50">Changes to regions reflect here in real-time.</p>
-            <TemplatePreview width={watchCanvasWidth} height={watchCanvasHeight} regions={editorElements.length ? editorElements : watchRegions} shape={watch('shape')} />
+            <TemplatePreview width={watchCanvasWidth} height={watchCanvasHeight} regions={watchRegions} />
           </div>
 
           {/* Editable Regions Configurator */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-white font-medium">Elements</h3>
-                  <button type="button" onClick={() => append({ id: `element_${fields.length + 1}`, type: 'rectangle', x: 100, y: 100, width: 200, height: 200, rotation: 0, zIndex: 0, visible: true, locked: false })} className="flex items-center gap-1 px-3 py-1.5 bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 rounded-lg text-sm transition-colors">
+              <h3 className="text-white font-medium">Editable Regions</h3>
+              <button type="button" onClick={() => append({ id: `region_${fields.length + 1}`, type: 'rectangle', x: 100, y: 100, width: 200, height: 200, rotation: 0 })} className="flex items-center gap-1 px-3 py-1.5 bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 rounded-lg text-sm transition-colors">
                 <HiPlus /> Add Region
               </button>
             </div>
@@ -283,11 +282,11 @@ export default function TemplateForm({ onCancel, onSuccess, template = null }) {
                   <div className="grid grid-cols-2 gap-3">
                     <div className="col-span-2 md:col-span-1">
                       <label className="block text-[10px] uppercase tracking-wider text-white/40 mb-1">ID</label>
-                      <input {...register(`elements.${index}.id`)} className="w-full bg-black/40 border border-white/5 rounded p-1.5 text-white text-sm" />
+                      <input {...register(`editableRegions.${index}.id`)} className="w-full bg-black/40 border border-white/5 rounded p-1.5 text-white text-sm" />
                     </div>
                     <div className="col-span-2 md:col-span-1">
                       <label className="block text-[10px] uppercase tracking-wider text-white/40 mb-1">Shape Type</label>
-                      <select {...register(`elements.${index}.type`)} className="w-full bg-black/40 border border-white/5 rounded p-1.5 text-white text-sm [&>option]:bg-gray-900">
+                      <select {...register(`editableRegions.${index}.type`)} className="w-full bg-black/40 border border-white/5 rounded p-1.5 text-white text-sm [&>option]:bg-gray-900">
                         <option value="rectangle">Rectangle</option>
                         <option value="rounded_rectangle">Rounded Rectangle</option>
                         <option value="circle">Circle</option>
@@ -298,19 +297,19 @@ export default function TemplateForm({ onCancel, onSuccess, template = null }) {
                     </div>
                     <div>
                       <label className="block text-[10px] uppercase tracking-wider text-white/40 mb-1">X Pos</label>
-                      <input type="number" {...register(`elements.${index}.x`)} className="w-full bg-black/40 border border-white/5 rounded p-1.5 text-white text-sm" />
+                      <input type="number" {...register(`editableRegions.${index}.x`)} className="w-full bg-black/40 border border-white/5 rounded p-1.5 text-white text-sm" />
                     </div>
                     <div>
                       <label className="block text-[10px] uppercase tracking-wider text-white/40 mb-1">Y Pos</label>
-                      <input type="number" {...register(`elements.${index}.y`)} className="w-full bg-black/40 border border-white/5 rounded p-1.5 text-white text-sm" />
+                      <input type="number" {...register(`editableRegions.${index}.y`)} className="w-full bg-black/40 border border-white/5 rounded p-1.5 text-white text-sm" />
                     </div>
                     <div>
                       <label className="block text-[10px] uppercase tracking-wider text-white/40 mb-1">Width</label>
-                      <input type="number" {...register(`elements.${index}.width`)} className="w-full bg-black/40 border border-white/5 rounded p-1.5 text-white text-sm" />
+                      <input type="number" {...register(`editableRegions.${index}.width`)} className="w-full bg-black/40 border border-white/5 rounded p-1.5 text-white text-sm" />
                     </div>
                     <div>
                       <label className="block text-[10px] uppercase tracking-wider text-white/40 mb-1">Height</label>
-                      <input type="number" {...register(`elements.${index}.height`)} className="w-full bg-black/40 border border-white/5 rounded p-1.5 text-white text-sm" />
+                      <input type="number" {...register(`editableRegions.${index}.height`)} className="w-full bg-black/40 border border-white/5 rounded p-1.5 text-white text-sm" />
                     </div>
                   </div>
                 </div>
