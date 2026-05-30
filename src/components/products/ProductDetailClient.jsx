@@ -11,7 +11,7 @@ import { Canvas } from '@react-three/fiber';
 import { OrbitControls, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import { MdTextFields } from 'react-icons/md';
-import { toggleWishlist, selectIsWishlisted } from '@/store/slices/wishlistSlice';
+import { useWishlist } from '@/hooks/useWishlist';
 import { formatPrice, getDiscountPercentage } from '@/lib/utils';
 import KonvaEditor from '@/components/editor/KonvaEditor';
 import TextLayerEditor from '@/components/editor/TextLayerEditor';
@@ -208,7 +208,8 @@ export default function ProductDetailClient({ product }) {
   // ── Derived editor selections ────────────────────────────────────────────────
   const selectedImageLayer = layers.find((l) => l.id === selectedLayerId && l.imageUrl);
   const selectedTextLayer = textLayers.find((t) => t.id === selectedLayerId);
-  const isWishlisted = useSelector(selectIsWishlisted(product.id));
+  const { items: wishlistIds, toggleWishlist } = useWishlist();
+  const isWishlisted = wishlistIds.includes(product.id);
 
   // Shape elements that can have border color overrides
   const shapeElements = useMemo(() => {
@@ -217,8 +218,8 @@ export default function ProductDetailClient({ product }) {
   }, [template]);
 
   // ── Cart / Buy handlers ──────────────────────────────────────────────────────
-  const handleToggleWishlist = () => {
-    dispatch(toggleWishlist(product.id));
+  const handleToggleWishlist = async () => {
+    await toggleWishlist(product.id);
     toast.success(isWishlisted ? 'Removed from wishlist' : 'Added to wishlist');
   };
 

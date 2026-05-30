@@ -14,6 +14,7 @@ import {
 import { toggleCart, toggleSearch, openMegaMenu, closeMegaMenu } from '@/store/slices/uiSlice';
 import { selectCartCount } from '@/store/slices/cartSlice';
 import { selectWishlistItems } from '@/store/slices/wishlistSlice';
+import { useWishlist } from '@/hooks/useWishlist';
 import { cn } from '@/lib/utils';
 
 const CATEGORIES = [
@@ -60,6 +61,7 @@ export default function Navbar() {
   const { data: session } = useSession();
   const cartCount = useSelector(selectCartCount);
   const wishlistItems = useSelector(selectWishlistItems);
+  useWishlist();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeMegaMenu, setActiveMegaMenu] = useState(null);

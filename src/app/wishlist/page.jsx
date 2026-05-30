@@ -1,34 +1,40 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { HiOutlineHeart } from 'react-icons/hi';
-import { selectWishlistItems } from '@/store/slices/wishlistSlice';
+import toast from 'react-hot-toast';
+import { useWishlist } from '@/hooks/useWishlist';
 import { ProductCard } from '@/components/products/ProductGrid';
 
 export default function WishlistPage() {
-  const wishlistIds = useSelector(selectWishlistItems);
+  const { items: wishlistIds, clearWishlist } = useWishlist();
+  const { status } = useSession();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
+  const queryIds = wishlistIds.length > 0 ? wishlistIds.join(',') : '';
 
   useEffect(() => {
-    if (!wishlistIds?.length) {
-      setProducts([]);
-      return;
-    }
-
     const controller = new AbortController();
-    const query = wishlistIds.join(',');
+    const apiUrl = status === 'authenticated'
+      ? '/api/wishlist'
+      : queryIds
+        ? `/api/wishlist?ids=${encodeURIComponent(queryIds)}`
+        : '/api/wishlist';
 
     setLoading(true);
-    fetch(`/api/wishlist?ids=${encodeURIComponent(query)}`, { signal: controller.signal })
+    fetch(apiUrl, { signal: controller.signal, credentials: 'same-origin' })
       .then(async (res) => {
         if (!res.ok) throw new Error(`Wishlist fetch failed: ${res.status}`);
         return res.json();
       })
-      .then((data) => setProducts(Array.isArray(data) ? data : []))
+      .then((data) => {
+        setProducts(Array.isArray(data.products) ? data.products : Array.isArray(data.items)
+          ? data.items.map((item) => item.product)
+          : []);
+      })
       .catch((err) => {
         if (err.name !== 'AbortError') {
           console.error(err);
@@ -38,7 +44,7 @@ export default function WishlistPage() {
       .finally(() => setLoading(false));
 
     return () => controller.abort();
-  }, [wishlistIds]);
+  }, [status, wishlistIds.length, queryIds]);
 
   return (
     <div className="pt-20 min-h-screen">
@@ -50,11 +56,22 @@ export default function WishlistPage() {
               Keep all your favorite products in one place. Add items from the product page and revisit them anytime.
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <span className="inline-flex items-center gap-2 rounded-full bg-white/5 px-4 py-2 text-sm text-white/80 border border-white/10">
               <HiOutlineHeart className="w-4 h-4 text-red-400" />
               {wishlistIds.length} item{wishlistIds.length === 1 ? '' : 's'}
             </span>
+            <button
+              type="button"
+              onClick={async () => {
+                await clearWishlist();
+                toast.success('Wishlist cleared');
+              }}
+              disabled={wishlistIds.length === 0}
+              className={`inline-flex items-center justify-center rounded-xl border px-4 py-2 text-sm transition-all ${wishlistIds.length === 0 ? 'border-white/10 bg-white/5 text-white/40 cursor-not-allowed' : 'bg-red-500/10 border-red-500/20 text-red-100 hover:bg-red-500/20'}`}
+            >
+              Clear wishlist
+            </button>
             <Link href="/products" className="inline-flex items-center justify-center rounded-xl bg-white/5 border border-white/10 px-4 py-2 text-sm text-white hover:bg-white/10 transition-all">
               Browse Products
             </Link>

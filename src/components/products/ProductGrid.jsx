@@ -9,7 +9,8 @@ import {
   HiChevronDown, HiOutlineFire, HiOutlineSparkles,
 } from 'react-icons/hi2';
 import { useDispatch, useSelector } from 'react-redux';
-import { toggleWishlist, selectIsWishlisted } from '@/store/slices/wishlistSlice';
+import { selectIsWishlisted } from '@/store/slices/wishlistSlice';
+import { useWishlist } from '@/hooks/useWishlist';
 import { formatPrice, getDiscountPercentage } from '@/lib/utils';
 import { CLIP_PATHS, SVG_PATHS } from '@/components/engine/shapeRegistry';
 import { AcrylicDepthShadow, GlassReflection, FloatingCard } from '@/components/engine/AcrylicEffects';
@@ -277,7 +278,7 @@ function FeatureChips({ features }) {
 
 // ── Wishlist button ───────────────────────────────────────────────────────────
 function WishlistBtn({ productId }) {
-  const dispatch = useDispatch();
+  const { toggleWishlist } = useWishlist();
   const isWishlisted = useSelector(selectIsWishlisted(productId));
   return (
     <motion.button
@@ -285,7 +286,7 @@ function WishlistBtn({ productId }) {
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        dispatch(toggleWishlist(productId));
+        toggleWishlist(productId);
       }}
       className="w-8 h-8 rounded-xl glass flex items-center justify-center transition-all hover:scale-110 z-20"
       aria-label="Toggle wishlist"
