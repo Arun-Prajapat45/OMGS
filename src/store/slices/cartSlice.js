@@ -1,7 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = {
-  items: [],       // Each item: { id, key, productId, designId, size, thickness, quantity, price, name, image, customData }
+  items: [],       // Each item: { id, key, productId, designId, size, thickness, quantity, price, name, image, customData, customRequirements }
   coupon: null,
   deliveryFee: 0,
   synced: false,   // Whether we've loaded from DB at least once
@@ -19,13 +19,14 @@ const cartSlice = createSlice({
     addToCart(state, action) {
       const { id, productId, designId, size, thickness, quantity = 1, price, name, image, customData } = action.payload;
       const key = `${productId}-${size || 'no-size'}-${thickness || 'no-thickness'}-${designId || 'no-design'}`;
+      const customRequirements = customData?.customRequirements || '';
       const existing = state.items.find((i) => i.key === key);
       if (existing) {
         existing.quantity += quantity;
-        // Update DB id if we got one back from server
         if (id) existing.id = id;
+        if (customRequirements) existing.customRequirements = customRequirements;
       } else {
-        state.items.push({ id: id || null, key, productId, designId, size, thickness, quantity, price, name, image, customData });
+        state.items.push({ id: id || null, key, productId, designId, size, thickness, quantity, price, name, image, customData, customRequirements });
       }
     },
     // Called after server responds with the real DB id

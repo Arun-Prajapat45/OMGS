@@ -20,7 +20,6 @@ export async function GET(req, { params }) {
     const product = await prisma.product.findUnique({
       where: { id },
       include: {
-        variants: true,
         category: true,
       }
     });
@@ -75,18 +74,6 @@ export async function PUT(req, { params }) {
       return NextResponse.json({ error: 'Category is required' }, { status: 400 });
     }
 
-    const variantPayload = (data.variants || []).map((variant) => ({
-      name: variant.name,
-      size: variant.size || null,
-      thickness: variant.thickness || null,
-      frameType: variant.frameType || null,
-      price: parseFloat(variant.price),
-      discountPrice: variant.discountPrice ? parseFloat(variant.discountPrice) : null,
-      stock: parseInt(variant.stock || '0', 10),
-      sku: variant.sku || null,
-      isActive: variant.isActive !== false,
-    }));
-
     const updatedProduct = await prisma.product.update({
       where: { id },
       data: {
@@ -97,26 +84,26 @@ export async function PUT(req, { params }) {
         description: data.description || null,
         categoryId: finalCategoryId,
         templateId: data.templateId,
-        basePrice: parseFloat(data.basePrice),
-        discountPrice: data.discountPrice ? parseFloat(data.discountPrice) : null,
         images: data.images || [],
-        sizes: data.sizes || [],
-        thicknesses: data.thicknesses || [],
+        variants: (data.variants || []).map((variant) => ({
+          dim: variant.dim || 'Standard',
+          thick: variant.thick != null ? String(variant.thick) : 'Standard',
+          price: parseFloat(variant.price || 0),
+          discountprice: variant.discountprice != null
+            ? parseFloat(variant.discountprice)
+            : parseFloat(variant.price || 0),
+          stocks: parseInt(variant.stocks || '0', 10),
+        })),
         tags: data.tags || [],
-        features: data.features || [],
         customizationRules: data.customizationRules || {},
         seo: data.seo || {},
         shape: data.shape || 'rectangle',
-        stock: parseInt(data.stock || '0', 10),
         isActive: data.isActive,
         isFeatured: data.isFeatured,
         isTrending: data.isTrending,
-        variants: {
-          deleteMany: {},
-          create: variantPayload,
-        }
+        is3dEnabled: data.is3dEnabled || false,
+        threeDModelUrl: data.threeDModelUrl || null,
       },
-      include: { variants: true }
     });
 
     return NextResponse.json({ success: true, product: updatedProduct });

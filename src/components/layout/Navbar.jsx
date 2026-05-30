@@ -8,7 +8,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useSession, signOut } from 'next-auth/react';
 import {
   HiOutlineShoppingCart, HiOutlineSearch, HiOutlineMenu, HiX,
-  HiOutlineHeart, HiOutlineUser, HiOutlineLogout, HiChevronDown,
+  HiOutlineHeart, HiOutlineUser, HiOutlineLogout,
   HiOutlineMoon, HiOutlineSun,
 } from 'react-icons/hi';
 import { toggleCart, toggleSearch, openMegaMenu, closeMegaMenu } from '@/store/slices/uiSlice';
@@ -21,49 +21,37 @@ const CATEGORIES = [
     id: 'acrylic-wall-photo',
     label: 'Acrylic Wall Photos',
     href: '/products?category=acrylic-wall-photo',
-    icon: '🖼️',
-    subcategories: [
-      { label: 'Square Acrylic', href: '/products?category=acrylic-wall-photo&shape=square' },
-      { label: 'Portrait Acrylic', href: '/products?category=acrylic-wall-photo&shape=portrait' },
-      { label: 'Landscape Acrylic', href: '/products?category=acrylic-wall-photo&shape=landscape' },
-      { label: 'Circle Acrylic', href: '/products?category=circle-acrylic' },
-    ],
-  },
-  {
-    id: 'clocks',
-    label: 'Acrylic Clocks',
-    href: '/products?category=clocks',
-    icon: '🕐',
-    subcategories: [
-      { label: 'Acrylic Wall Clock', href: '/products?category=acrylic-clock' },
-      { label: 'Hexagon Photo Clock', href: '/products?category=hexagon-clock' },
-      { label: 'Triangle Acrylic Clock', href: '/products?category=triangle-clock' },
-      { label: 'Circle Clock', href: '/products?category=circle-clock' },
-    ],
+    // subcategories: [
+    //   { label: 'Portrait Acrylic', href: '/products?category=acrylic-wall-photo&shape=portrait' },
+    //   { label: 'Landscape Acrylic', href: '/products?category=acrylic-wall-photo&shape=landscape' },
+    //   { label: 'Square Acrylic', href: '/products?category=acrylic-wall-photo&shape=square' },
+    //   { label: 'Circle Acrylic', href: '/products?category=circle-acrylic' },
+    //   { label: 'Hexagon Acrylic', href: '/products?category=custom-shape-acrylic' },
+    // ],
   },
   {
     id: 'collage-frame',
     label: 'Collage Frames',
     href: '/products?category=collage-frame',
-    icon: '🎨',
-    subcategories: [
-      { label: '2 Photo Collage', href: '/products?category=collage-frame&count=2' },
-      { label: '4 Photo Grid', href: '/products?category=collage-frame&count=4' },
-      { label: '6 Photo Mosaic', href: '/products?category=collage-frame&count=6' },
-      { label: 'Hexagon Collage', href: '/products?category=hexagon-collage' },
-    ],
+    // icon: '🎨',
+    // subcategories: [
+    //   { label: '2 Photo Collage', href: '/products?category=collage-frame&count=2' },
+    //   { label: '4 Photo Grid', href: '/products?category=collage-frame&count=4' },
+    //   { label: '6 Photo Mosaic', href: '/products?category=collage-frame&count=6' },
+    //   { label: 'Hexagon Collage', href: '/products?category=hexagon-collage' },
+    // ],
   },
   {
     id: 'gifts',
     label: 'Gifts & Special',
     href: '/products?category=gifts',
-    icon: '🎁',
-    subcategories: [
-      { label: 'Couple Heart Frame', href: '/products?category=couple-gift' },
-      { label: 'Baby Birth Frame', href: '/products?category=baby-frame' },
-      { label: 'Anniversary Gifts', href: '/products?category=anniversary' },
-      { label: 'Custom Text Products', href: '/products?category=custom-text' },
-    ],
+    // icon: '🎁',
+    // subcategories: [
+    //   { label: 'Couple Heart Frame', href: '/products?category=couple-gift' },
+    //   { label: 'Baby Birth Frame', href: '/products?category=baby-frame' },
+    //   { label: 'Anniversary Gifts', href: '/products?category=anniversary' },
+    //   { label: 'Custom Text Products', href: '/products?category=custom-text' },
+    // ],
   },
 ];
 
@@ -85,6 +73,13 @@ export default function Navbar() {
     setTheme(activeTheme);
     document.documentElement.classList.toggle('light', activeTheme === 'light');
   }, []);
+
+  // Clear stale cookies if user was deleted from DB
+  useEffect(() => {
+    if (session && !session.user) {
+      signOut({ redirect: false });
+    }
+  }, [session]);
 
   const toggleTheme = () => {
     const nextTheme = theme === 'dark' ? 'light' : 'dark';
@@ -146,14 +141,11 @@ export default function Navbar() {
                   )}
                 >
                   {cat.label}
-                  <HiChevronDown
-                    className={cn('w-4 h-4 transition-transform', activeMegaMenu === cat.id && 'rotate-180')}
-                  />
                 </Link>
 
-                {/* Mega Menu */}
+                {/* Mega Menu (render only when category has subcategories) */}
                 <AnimatePresence>
-                  {activeMegaMenu === cat.id && (
+                  {activeMegaMenu === cat.id && cat.subcategories && cat.subcategories.length > 0 && (
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -183,15 +175,9 @@ export default function Navbar() {
           </nav>
 
           {/* Right Actions */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             {/* Search */}
-            <button
-              onClick={() => dispatch(toggleSearch())}
-              className="p-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-all"
-              aria-label="Search"
-            >
-              <HiOutlineSearch className="w-5 h-5" />
-            </button>
+            
 
             <button
               onClick={toggleTheme}
@@ -239,7 +225,7 @@ export default function Navbar() {
             </button>
 
             {/* User */}
-            {session ? (
+            {session?.user ? (
               <div className="relative group hidden sm:block">
                 <button className="flex items-center gap-2 p-2 rounded-xl hover:bg-white/10 transition-all">
                   {session.user.image ? (
@@ -309,18 +295,20 @@ export default function Navbar() {
                     <span className="text-xl">{cat.icon}</span>
                     {cat.label}
                   </Link>
-                  <div className="pl-12 space-y-1">
-                    {cat.subcategories.map((sub) => (
-                      <Link
-                        key={sub.href}
-                        href={sub.href}
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="block px-3 py-2 text-sm text-white/60 hover:text-white hover:bg-white/5 rounded-lg transition-all"
-                      >
-                        {sub.label}
-                      </Link>
-                    ))}
-                  </div>
+                  {cat.subcategories && cat.subcategories.length > 0 && (
+                    <div className="pl-12 space-y-1">
+                      {cat.subcategories.map((sub) => (
+                        <Link
+                          key={sub.href}
+                          href={sub.href}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="block px-3 py-2 text-sm text-white/60 hover:text-white hover:bg-white/5 rounded-lg transition-all"
+                        >
+                          {sub.label}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
               <Link
@@ -330,7 +318,7 @@ export default function Navbar() {
               >
                 All Products
               </Link>
-              {!session && (
+              {!session?.user && (
                 <Link
                   href="/auth/login"
                   onClick={() => setMobileMenuOpen(false)}

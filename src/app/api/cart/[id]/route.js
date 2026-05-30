@@ -2,6 +2,27 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
+function buildCartWhereClause(session, cartSessionCookie) {
+  if (session?.user && cartSessionCookie) {
+    return {
+      OR: [
+        { userId: session.user.id },
+        { sessionId: cartSessionCookie },
+      ],
+    };
+  }
+
+  if (session?.user) {
+    return { userId: session.user.id };
+  }
+
+  if (cartSessionCookie) {
+    return { sessionId: cartSessionCookie };
+  }
+
+  return null;
+}
+
 // PATCH /api/cart/[id] — update quantity of a specific cart item
 export async function PATCH(req, { params }) {
   try {

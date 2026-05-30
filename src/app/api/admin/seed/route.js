@@ -93,10 +93,16 @@ export async function POST(req) {
           description: `This is a beautiful ${item.prodName}. Custom made to your perfection.`,
           categoryId: category.id,
           templateId: template.id,
-          basePrice: item.basePrice,
+          variants: [
+            {
+              dim: 'Standard',
+              thick: 'Standard',
+              price: item.basePrice,
+              discountprice: item.basePrice,
+              stocks: 100
+            }
+          ],
           images: [],
-          sizes: ['Standard'],
-          thicknesses: [],
           tags: item.tags,
           shape: 'rectangle',
           isFeatured: true,

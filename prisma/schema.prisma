@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "mysql"
-  url      = env("DATABASE_URL")
+  url      = env("DATABASE_URL2")
 }
 
 model User {
@@ -70,16 +70,16 @@ model VerificationToken {
 }
 
 model Category {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   name        String
-  slug        String    @unique
-  description String?   @db.Text
+  slug        String   @unique
+  description String?  @db.Text
   image       String?
   icon        String?
-  sortOrder   Int       @default(0)
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   products Product[]
 
@@ -87,124 +87,57 @@ model Category {
 }
 
 model Template {
-  id             String   @id @default(cuid())
-  name           String
-  slug           String   @unique
-  canvasWidth    Int
-  canvasHeight   Int
-  templateJson   Json
-  previewImage   String?
-  productType    String
-  isActive       Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id           String   @id @default(cuid())
+  name         String
+  slug         String   @unique
+  canvasWidth  Int
+  canvasHeight Int
+  templateJson Json
+  previewImage String?
+  productType  String
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  products       Product[]
-  designs        Design[]
-  layers         Layer[]
-  editableRegions EditableRegion[]
-  borderStyles   BorderStyle[]
+  products Product[]
+  designs  Design[]
 
   @@map("templates")
 }
 
-model Layer {
-  id         String   @id @default(cuid())
-  templateId String
-  type       String   // e.g., 'overlay', 'text', 'editable-image'
-  name       String?
-  configJson Json
-  zIndex     Int      @default(0)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  template   Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
-
-  @@map("layers")
-}
-
-model EditableRegion {
-  id         String   @id @default(cuid())
-  templateId String
-  type       String   // e.g., 'svg', 'circle', 'rectangle'
-  name       String?
-  x          Int
-  y          Int
-  width      Int
-  height     Int
-  configJson Json?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  template   Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
-
-  @@map("editable_regions")
-}
-
-model BorderStyle {
-  id         String   @id @default(cuid())
-  templateId String
-  type       String   // e.g., 'solid', 'image'
-  color      String?
-  width      Int?
-  imageSrc   String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  template   Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
-
-  @@map("border_styles")
-}
-
 model Product {
-  id            String   @id @default(cuid())
-  name          String
-  slug          String   @unique
-  sku           String?
-  shortDescription String? @db.Text
-  description   String?  @db.Text
-  categoryId    String
-  templateId    String
-  basePrice     Decimal  @db.Decimal(10, 2)
-  discountPrice Decimal? @db.Decimal(10, 2)
-  images        Json
-  sizes         Json
-  thicknesses   Json?
-  tags          Json?
-  features      Json?
+  id                 String   @id @default(cuid())
+  name               String
+  slug               String   @unique
+  sku                String?
+  shortDescription   String?  @db.Text
+  description        String?  @db.Text
+  categoryId         String
+  templateId         String
+  images             Json
+  variants           Json     @default("[{\"dim\": \"48x24\", \"price\": 1000, \"thick\": \"3mm\", \"stocks\": 2, \"discountprice\": 889}, {\"dim\": \"48x24\", \"price\": 1200, \"thick\": \"5mm\", \"stocks\": 5, \"discountprice\": 999}, {\"dim\": \"48x32\", \"price\": 1300, \"thick\": \"3mm\", \"stocks\": 5, \"discountprice\": 1100}, {\"dim\": \"48x32\", \"price\": 1500, \"thick\": \"5mm\", \"stocks\": 5, \"discountprice\": 1300}]")
+  tags               Json?
   customizationRules Json?
-  seo           Json?
-  shape         String   @default("rectangle")
-  stock         Int      @default(100)
-  isActive      Boolean  @default(true)
-  isFeatured    Boolean  @default(false)
-  isTrending    Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  seo                Json?
+  shape              String   @default("rectangle")
+  isActive           Boolean  @default(true)
+  isFeatured         Boolean  @default(false)
+  isTrending         Boolean  @default(false)
+  is3dEnabled        Boolean  @default(false)
+  threeDModelUrl     String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
-  category  Category   @relation(fields: [categoryId], references: [id])
-  template  Template   @relation(fields: [templateId], references: [id])
-  variants  ProductVariant[]
-  reviews   Review[]
-  cartItems CartItem[]
-  orderItems OrderItem[]
-  wishlistItems WishlistItem[]
-  productImages ProductImage[]
+  category       Category         @relation(fields: [categoryId], references: [id])
+  template       Template         @relation(fields: [templateId], references: [id])
+  variantRecords ProductVariant[]
+  reviews        Review[]
+  cartItems      CartItem[]
+  orderItems     OrderItem[]
+  wishlistItems  WishlistItem[]
+  designs        Design[]
 
   @@map("products")
-}
-
-model ProductImage {
-  id        String   @id @default(cuid())
-  productId String
-  url       String   @db.Text
-  isPrimary Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  @@map("product_images")
 }
 
 model ProductVariant {
@@ -222,36 +155,38 @@ model ProductVariant {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@map("product_variants")
 }
 
 model Design {
-  id              String   @id @default(cuid())
-  userId          String
-  templateId      String
-  productId       String?
-  name            String?
-  customizedJson  Json
-  previewImage    String?
-  status          DesignStatus @default(DRAFT)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String       @id @default(cuid())
+  userId         String
+  templateId     String
+  productId      String?
+  name           String?
+  customizedJson Json
+  previewImage   String?
+  status         DesignStatus @default(DRAFT)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  template   Template @relation(fields: [templateId], references: [id])
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template   Template    @relation(fields: [templateId], references: [id])
+  product    Product?    @relation(fields: [productId], references: [id])
   orderItems OrderItem[]
+  cartItems  CartItem[]
 
   @@map("designs")
 }
 
 model CartItem {
-  id         String  @id @default(cuid())
+  id         String   @id @default(cuid())
   userId     String
   productId  String
   designId   String?
-  quantity   Int     @default(1)
+  quantity   Int      @default(1)
   size       String?
   thickness  String?
   customData Json?
@@ -259,6 +194,7 @@ model CartItem {
 
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id])
+  design  Design? @relation(fields: [designId], references: [id])
 
   @@map("cart_items")
 }
@@ -277,21 +213,21 @@ model WishlistItem {
 }
 
 model Order {
-  id              String      @id @default(cuid())
+  id              String        @id @default(cuid())
   userId          String
-  orderNumber     String      @unique
-  status          OrderStatus @default(PENDING)
-  subtotal        Decimal     @db.Decimal(10, 2)
-  discount        Decimal     @db.Decimal(10, 2) @default(0)
-  deliveryFee     Decimal     @db.Decimal(10, 2) @default(0)
-  total           Decimal     @db.Decimal(10, 2)
+  orderNumber     String        @unique
+  status          OrderStatus   @default(PENDING)
+  subtotal        Decimal       @db.Decimal(10, 2)
+  discount        Decimal       @default(0) @db.Decimal(10, 2)
+  deliveryFee     Decimal       @default(0) @db.Decimal(10, 2)
+  total           Decimal       @db.Decimal(10, 2)
   couponCode      String?
   paymentId       String?
   paymentStatus   PaymentStatus @default(PENDING)
   shippingAddress Json
-  notes           String?     @db.Text
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  notes           String?       @db.Text
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
   user       User        @relation(fields: [userId], references: [id])
   orderItems OrderItem[]
@@ -319,16 +255,16 @@ model OrderItem {
 }
 
 model Review {
-  id        String   @id @default(cuid())
-  userId    String
-  productId String
-  rating    Int
-  title     String?
-  comment   String?  @db.Text
-  images    Json?
-  isVerified Boolean @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(cuid())
+  userId     String
+  productId  String
+  rating     Int
+  title      String?
+  comment    String?  @db.Text
+  images     Json?
+  isVerified Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id])
@@ -353,17 +289,17 @@ model Coupon {
 }
 
 model Upload {
-  id            String   @id @default(cuid())
-  userId        String?
-  publicId      String   @unique
-  url           String   @db.Text
-  secureUrl     String   @db.Text
-  format        String
-  width         Int?
-  height        Int?
-  bytes         Int?
-  resourceType  String   @default("image")
-  createdAt     DateTime @default(now())
+  id           String   @id @default(cuid())
+  userId       String?
+  publicId     String   @unique
+  url          String   @db.Text
+  secureUrl    String   @db.Text
+  format       String
+  width        Int?
+  height       Int?
+  bytes        Int?
+  resourceType String   @default("image")
+  createdAt    DateTime @default(now())
 
   @@map("uploads")
 }

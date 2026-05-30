@@ -84,6 +84,7 @@ function CollagePreview({ template, images, gradient }) {
                 height: `${height}%`,
                 borderRadius: region.cornerRadius ? `${region.cornerRadius / canvas.width * 100}%` : undefined,
                 clipPath: getRegionClip(region),
+                transform: region.rotation ? `rotate(${region.rotation}deg)` : undefined,
                 background: regionImg
                   ? undefined
                   : `linear-gradient(135deg, ${gradient[0]}22, ${gradient[1]}44)`,
@@ -109,6 +110,9 @@ function getRegionClip(region) {
   if (region.type === 'circle')  return 'circle(50%)';
   if (region.type === 'hexagon') return CLIP_PATHS.hexagon;
   if (region.type === 'triangle') return CLIP_PATHS.triangle;
+  if (region.type === 'oval') return CLIP_PATHS.oval;
+  if (region.type === 'star') return CLIP_PATHS.star;
+  if (region.type === 'diamond') return 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)';
   return undefined;
 }
 
@@ -121,19 +125,36 @@ function SingleShapePreview({ shape, image, gradient, hasGloss, overlays = [] })
   const isClockProduct = overlays.some(o => o.type === 'clock-hands');
 
   if (svgPath) {
-    // SVG mask approach for heart/wave/blob
+    // SVG mask approach for heart/wave/cloud — fills container exactly like clip-path shapes
     return (
-      <div className="relative flex items-center justify-center" style={{ width: '100%', height: '100%', overflow: 'visible' }}>
+      <div
+        className="relative"
+        style={{
+          width: '100%',
+          height: '100%',
+          filter: 'drop-shadow(0 6px 16px rgba(0,0,0,0.6))',
+        }}
+      >
         <svg
           viewBox="0 0 100 100"
-          className="w-full h-full"
-          style={{ filter: 'drop-shadow(0 6px 16px rgba(0,0,0,0.6))', overflow: 'visible' }}
-          preserveAspectRatio="xMidYMid meet"
+          width="100%"
+          height="100%"
+          preserveAspectRatio="none"
         >
           <defs>
-            <clipPath id={`svg-clip-${shape}`}>
+            <clipPath id={`svg-clip-${shape}`} clipPathUnits="userSpaceOnUse">
               <path d={svgPath} />
             </clipPath>
+            <linearGradient id={`grad-${shape}`} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor={gradient[0]} />
+              <stop offset="100%" stopColor={gradient[1]} />
+            </linearGradient>
+            {hasGloss && (
+              <linearGradient id="glossSvg" x1="0%" y1="0%" x2="50%" y2="50%">
+                <stop offset="0%" stopColor="rgba(255,255,255,0.25)" />
+                <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+              </linearGradient>
+            )}
           </defs>
           {image ? (
             <image
@@ -143,27 +164,10 @@ function SingleShapePreview({ shape, image, gradient, hasGloss, overlays = [] })
               clipPath={`url(#svg-clip-${shape})`}
             />
           ) : (
-            <path
-              d={svgPath}
-              fill={`url(#grad-${shape})`}
-            />
+            <path d={svgPath} fill={`url(#grad-${shape})`} />
           )}
-          <defs>
-            <linearGradient id={`grad-${shape}`} x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor={gradient[0]} />
-              <stop offset="100%" stopColor={gradient[1]} />
-            </linearGradient>
-          </defs>
           {hasGloss && (
-            <>
-              <path d={svgPath} fill="url(#glossSvg)" clipPath={`url(#svg-clip-${shape})`} />
-              <defs>
-                <linearGradient id="glossSvg" x1="0%" y1="0%" x2="50%" y2="50%">
-                  <stop offset="0%" stopColor="rgba(255,255,255,0.25)" />
-                  <stop offset="100%" stopColor="rgba(255,255,255,0)" />
-                </linearGradient>
-              </defs>
-            </>
+            <path d={svgPath} fill="url(#glossSvg)" clipPath={`url(#svg-clip-${shape})`} />
           )}
         </svg>
       </div>

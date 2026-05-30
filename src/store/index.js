@@ -5,6 +5,7 @@ import cartReducer from './slices/cartSlice';
 import editorReducer from './slices/editorSlice';
 import uiReducer from './slices/uiSlice';
 import wishlistReducer from './slices/wishlistSlice';
+import templateBuilderReducer from './slices/templateBuilderSlice';
 
 export const store = configureStore({
   reducer: {
@@ -12,6 +13,7 @@ export const store = configureStore({
     editor: editorReducer,
     ui: uiReducer,
     wishlist: wishlistReducer,
+    templateBuilder: templateBuilderReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

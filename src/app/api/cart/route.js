@@ -2,10 +2,10 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
-// GET /api/cart — fetch all cart items for the current user
-export async function GET() {
+export async function GET(req) {
   try {
     const session = await auth();
+
     if (!session?.user) {
       return NextResponse.json({ items: [] });
     }
@@ -18,14 +18,21 @@ export async function GET() {
             id: true,
             name: true,
             images: true,
-            basePrice: true,
-            discountPrice: true,
+            variants: true,
             slug: true,
           },
         },
       },
       orderBy: { createdAt: 'asc' },
     });
+
+    const getProductFallbackPrice = (product) => {
+      if (!product?.variants?.length) return 0;
+      return Number(product.variants.reduce((min, variant) => {
+        const price = variant.discountprice != null ? Number(variant.discountprice) : Number(variant.price || 0);
+        return min === null || price < min ? price : min;
+      }, null) || 0);
+    };
 
     // Normalize for frontend
     const normalized = items.map((item) => ({
@@ -38,7 +45,7 @@ export async function GET() {
       thickness: item.thickness,
       customData: item.customData,
       name: item.product.name,
-      price: item.customData?.price || Number(item.product.discountPrice || item.product.basePrice),
+      price: item.customData?.price || getProductFallbackPrice(item.product),
       image: item.customData?.image || (Array.isArray(item.product.images) ? item.product.images[0] : null),
     }));
 
@@ -53,6 +60,7 @@ export async function GET() {
 export async function POST(req) {
   try {
     const session = await auth();
+
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -64,7 +72,7 @@ export async function POST(req) {
       return NextResponse.json({ error: 'productId is required' }, { status: 400 });
     }
 
-    // Upsert: increment quantity if same item exists
+    // Upsert: increment quantity if same item exists for the user.
     const existing = await prisma.cartItem.findFirst({
       where: {
         userId: session.user.id,
@@ -105,10 +113,10 @@ export async function POST(req) {
   }
 }
 
-// DELETE /api/cart — clear entire cart
-export async function DELETE() {
+export async function DELETE(req) {
   try {
     const session = await auth();
+
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

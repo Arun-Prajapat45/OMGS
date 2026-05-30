@@ -30,21 +30,21 @@ export function useCart() {
   const synced = useSelector(selectCartSynced);
   const isLoggedIn = status === 'authenticated';
 
-  // ── Load cart from DB on login ──────────────────────────────────────────
+  // ── Load cart from DB once session status is resolved ────────────────────
   useEffect(() => {
-    if (isLoggedIn && !synced) {
-      fetch('/api/cart')
-        .then((res) => res.json())
-        .then(({ items: dbItems }) => {
-          if (Array.isArray(dbItems)) {
-            dispatch(setCart(dbItems));
-          }
-        })
-        .catch(() => {
-          // Silently fail – local Redux state is still usable
-        });
-    }
-  }, [isLoggedIn, synced, dispatch]);
+    if (status === 'loading' || synced) return;
+
+    fetch('/api/cart', { credentials: 'same-origin' })
+      .then((res) => res.json())
+      .then(({ items: dbItems }) => {
+        if (Array.isArray(dbItems)) {
+          dispatch(setCart(dbItems));
+        }
+      })
+      .catch(() => {
+        // Silently fail – local Redux state is still usable
+      });
+  }, [status, synced, dispatch]);
 
   // ── Add to cart ─────────────────────────────────────────────────────────
   const handleAddToCart = useCallback(
@@ -52,35 +52,34 @@ export function useCart() {
       // Optimistically update Redux
       dispatch(addToCart({ productId, designId, size, thickness, quantity, price, name, image, customData }));
 
-      if (isLoggedIn) {
-        try {
-          const res = await fetch('/api/cart', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              productId,
-              designId,
-              size,
-              thickness,
-              quantity,
-              customData: { price, image, ...customData },
-            }),
-          });
+      try {
+        const res = await fetch('/api/cart', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            productId,
+            designId,
+            size,
+            thickness,
+            quantity,
+            customData: { price, image, ...customData },
+          }),
+        });
 
-          if (res.ok) {
-            const { item } = await res.json();
-            // Store the DB id so we can PATCH/DELETE it later
-            const key = `${productId}-${size || 'no-size'}-${thickness || 'no-thickness'}-${designId || 'no-design'}`;
-            dispatch(updateCartItemId({ key, id: item.id }));
-          } else {
-            console.error('Failed to persist cart item to DB');
-          }
-        } catch (err) {
-          console.error('Cart sync error:', err);
+        if (res.ok) {
+          const { item } = await res.json();
+          // Store the DB id so we can PATCH/DELETE it later
+          const key = `${productId}-${size || 'no-size'}-${thickness || 'no-thickness'}-${designId || 'no-design'}`;
+          dispatch(updateCartItemId({ key, id: item.id }));
+        } else {
+          console.error('Failed to persist cart item to DB');
         }
+      } catch (err) {
+        console.error('Cart sync error:', err);
       }
     },
-    [dispatch, isLoggedIn]
+    [dispatch]
   );
 
   // ── Remove from cart ────────────────────────────────────────────────────
@@ -89,15 +88,15 @@ export function useCart() {
       const item = items.find((i) => i.key === key);
       dispatch(removeFromCart(key));
 
-      if (isLoggedIn && item?.id) {
+      if (item?.id) {
         try {
-          await fetch(`/api/cart/${item.id}`, { method: 'DELETE' });
+          await fetch(`/api/cart/${item.id}`, { method: 'DELETE', credentials: 'same-origin' });
         } catch (err) {
           console.error('Cart remove sync error:', err);
         }
       }
     },
-    [dispatch, isLoggedIn, items]
+    [dispatch, items]
   );
 
   // ── Update quantity ─────────────────────────────────────────────────────
@@ -106,10 +105,11 @@ export function useCart() {
       const item = items.find((i) => i.key === key);
       dispatch(updateQuantity({ key, quantity }));
 
-      if (isLoggedIn && item?.id) {
+      if (item?.id) {
         try {
           await fetch(`/api/cart/${item.id}`, {
             method: 'PATCH',
+            credentials: 'same-origin',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ quantity: Math.max(1, quantity) }),
           });
@@ -118,21 +118,19 @@ export function useCart() {
         }
       }
     },
-    [dispatch, isLoggedIn, items]
+    [dispatch, items]
   );
 
   // ── Clear cart ──────────────────────────────────────────────────────────
   const handleClearCart = useCallback(async () => {
     dispatch(clearCart());
 
-    if (isLoggedIn) {
-      try {
-        await fetch('/api/cart', { method: 'DELETE' });
-      } catch (err) {
-        console.error('Cart clear sync error:', err);
-      }
+    try {
+      await fetch('/api/cart', { method: 'DELETE', credentials: 'same-origin' });
+    } catch (err) {
+      console.error('Cart clear sync error:', err);
     }
-  }, [dispatch, isLoggedIn]);
+  }, [dispatch]);
 
   // ── Add to cart + open drawer ───────────────────────────────────────────
   const addAndOpenCart = useCallback(

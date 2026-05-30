@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { HiPlus, HiTrash, HiUpload, HiX } from 'react-icons/hi';
 import toast from 'react-hot-toast';
+import KonvaEditor from '@/components/editor/KonvaEditor';
 
 const productSchema = z.object({
   name: z.string().min(1, 'Product name is required'),
@@ -16,28 +17,20 @@ const productSchema = z.object({
   categoryId: z.string().optional(),
   newCategoryName: z.string().optional(),
   templateId: z.string().min(1, 'Template is required'),
-  basePrice: z.coerce.number().min(0, 'Base price must be positive'),
-  discountPrice: z.coerce.number().optional(),
-  stock: z.coerce.number().min(0),
   shape: z.string().default('rectangle'),
   isActive: z.boolean().default(true),
   isFeatured: z.boolean().default(false),
   isTrending: z.boolean().default(false),
   images: z.array(z.string()),
-  sizes: z.string().optional(),
-  thicknesses: z.string().optional(),
   tags: z.string().optional(),
-  features: z.array(z.object({ value: z.string() })).optional(),
   variants: z.array(z.object({
-    name: z.string(),
-    size: z.string().optional(),
-    thickness: z.string().optional(),
-    frameType: z.string().optional(),
-    price: z.coerce.number(),
-    discountPrice: z.coerce.number().optional(),
-    stock: z.coerce.number().default(0),
-    sku: z.string().optional(),
-  })).optional(),
+    dim: z.string().min(1, 'Dimension is required'),
+    thick: z.string().min(1, 'Thickness is required'),
+    price: z.coerce.number().min(0, 'Price is required'),
+    discountprice: z.coerce.number().min(0).optional(),
+    stocks: z.coerce.number().min(0, 'Stock is required'),
+  })).min(1, 'At least one variant is required'),
+  is3dEnabled: z.boolean().default(false),
   seo: z.object({
     metaTitle: z.string().optional(),
     metaDescription: z.string().optional(),
@@ -53,18 +46,20 @@ const productSchema = z.object({
   path: ["categoryId"]
 });
 
-const TABS = ['Basic', 'Variants', 'Media', 'Features', 'Rules', 'SEO'];
+const TABS = ['Basic', 'Variants', 'Media', 'Rules', 'SEO'];
 
 export default function ProductForm({ product, categories, templates, onCancel, onSuccess }) {
   const [activeTab, setActiveTab] = useState('Basic');
   const [uploading, setUploading] = useState(false);
   const [isNewCategory, setIsNewCategory] = useState(false);
+  const [triggerExport, setTriggerExport] = useState(false);
 
   const initialValues = {
     name: '', slug: '', sku: '', shortDescription: '', description: '',
-    categoryId: '', newCategoryName: '', templateId: '', basePrice: 0, stock: 100, shape: 'rectangle',
+    categoryId: '', newCategoryName: '', templateId: '', shape: 'rectangle',
     isActive: true, isFeatured: false, isTrending: false,
-    images: [], sizes: '', thicknesses: '', tags: '', features: [], variants: [],
+    images: [], tags: '', variants: [],
+    is3dEnabled: false,
     seo: { metaTitle: '', metaDescription: '', keywords: '' },
     customizationRules: { maxUploadImages: 1, allowText: true, allowCrop: true }
   };
@@ -90,28 +85,20 @@ export default function ProductForm({ product, categories, templates, onCancel, 
       categoryId: product.categoryId ?? '',
       newCategoryName: '',
       templateId: product.templateId ?? '',
-      basePrice: product.basePrice ? Number(product.basePrice) : 0,
-      discountPrice: product.discountPrice != null ? Number(product.discountPrice) : undefined,
-      stock: product.stock ?? 100,
       shape: product.shape ?? 'rectangle',
       isActive: product.isActive ?? true,
       isFeatured: product.isFeatured ?? false,
       isTrending: product.isTrending ?? false,
       images: product.images || [],
-      sizes: Array.isArray(product.sizes) ? product.sizes.join(', ') : product.sizes || '',
-      thicknesses: Array.isArray(product.thicknesses) ? product.thicknesses.join(', ') : product.thicknesses || '',
       tags: Array.isArray(product.tags) ? product.tags.join(', ') : product.tags || '',
-      features: Array.isArray(product.features) ? product.features.map((value) => ({ value })) : [],
       variants: Array.isArray(product.variants) ? product.variants.map((variant) => ({
-        name: variant.name || '',
-        size: variant.size || '',
-        thickness: variant.thickness || '',
-        frameType: variant.frameType || '',
+        dim: variant.dim || variant.size || variant.name || '',
+        thick: variant.thick != null ? String(variant.thick) : String(variant.thickness || ''),
         price: variant.price ? Number(variant.price) : 0,
-        discountPrice: variant.discountPrice != null ? Number(variant.discountPrice) : undefined,
-        stock: variant.stock ?? 0,
-        sku: variant.sku || '',
+        discountprice: variant.discountprice != null ? Number(variant.discountprice) : variant.discountPrice != null ? Number(variant.discountPrice) : undefined,
+        stocks: variant.stocks ?? variant.stock ?? 0,
       })) : [],
+      is3dEnabled: product.is3dEnabled ?? false,
       seo: {
         metaTitle: product.seo?.metaTitle ?? '',
         metaDescription: product.seo?.metaDescription ?? '',
@@ -127,9 +114,16 @@ export default function ProductForm({ product, categories, templates, onCancel, 
   }, [product, reset]);
 
   const { fields: variantFields, append: appendVariant, remove: removeVariant } = useFieldArray({ control, name: 'variants' });
-  const { fields: featureFields, append: appendFeature, remove: removeFeature } = useFieldArray({ control, name: 'features' });
 
   const watchImages = watch('images') || [];
+  const watchTemplateId = watch('templateId');
+  const selectedTemplate = templates.find((t) => t.id === watchTemplateId);
+
+  useEffect(() => {
+    if (selectedTemplate?.shape) {
+      setValue('shape', selectedTemplate.shape);
+    }
+  }, [selectedTemplate, setValue]);
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
@@ -158,14 +152,54 @@ export default function ProductForm({ product, categories, templates, onCancel, 
     setValue('images', newImages);
   };
 
+  const handleHighResExport = async (highResUri) => {
+    setTriggerExport(false);
+    if (!highResUri) return;
+    
+    const toastId = toast.loading('Uploading preview image...');
+    setUploading(true);
+    try {
+      const res = await fetch(highResUri);
+      const blob = await res.blob();
+      const file = new File([blob], `preview-${Date.now()}.webp`, { type: 'image/webp' });
+      
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const uploadRes = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      const data = await uploadRes.json();
+      if (uploadRes.ok) {
+        const url = data.url || data.secureUrl;
+        setValue('images', [...watchImages, url]);
+        toast.success('Preview uploaded!', { id: toastId });
+      } else {
+        throw new Error(data.error || 'Upload failed');
+      }
+    } catch (err) {
+      toast.error('Failed to upload preview', { id: toastId });
+      console.error(err);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const onSubmit = async (data) => {
     try {
       const payload = {
         ...data,
-        sizes: typeof data.sizes === 'string' && data.sizes ? data.sizes.split(',').map(s => s.trim()).filter(Boolean) : [],
-        thicknesses: typeof data.thicknesses === 'string' && data.thicknesses ? data.thicknesses.split(',').map(s => s.trim()).filter(Boolean) : [],
         tags: typeof data.tags === 'string' && data.tags ? data.tags.split(',').map(s => s.trim()).filter(Boolean) : [],
-        features: data.features?.map(f => f.value).filter(Boolean) || []
+        variants: (data.variants || []).map((variant) => ({
+          dim: variant.dim || 'Standard',
+          thick: String(variant.thick || 'Standard'),
+          price: Number(variant.price || 0),
+          discountprice: variant.discountprice != null ? Number(variant.discountprice) : Number(variant.price || 0),
+          stocks: Number(variant.stocks || 0),
+        })),
+        is3dEnabled: data.is3dEnabled || false,
       };
 
       const endpoint = product ? `/api/admin/products/${product.id}` : '/api/admin/products';
@@ -248,13 +282,30 @@ export default function ProductForm({ product, categories, templates, onCancel, 
               )}
               {errors.categoryId && <p className="text-red-400 text-xs mt-1">{errors.categoryId.message}</p>}
             </div>
-            <div>
-              <label className="block text-sm text-white/60 mb-1">Base Price *</label>
-              <input type="number" step="0.01" {...register('basePrice')} className="w-full bg-black/20 border border-white/10 rounded-lg p-2 text-white" />
-            </div>
-            <div>
-              <label className="block text-sm text-white/60 mb-1">Discount Price</label>
-              <input type="number" step="0.01" {...register('discountPrice')} className="w-full bg-black/20 border border-white/10 rounded-lg p-2 text-white" />
+            
+            <div className="md:col-span-2 p-4 border border-white/10 rounded-xl bg-white/5">
+              <label className="block text-sm text-white/60 mb-2">Template Base *</label>
+              <select {...register('templateId')} className="w-full bg-black/20 border border-white/10 rounded-lg p-2 text-white [&>option]:bg-gray-900 mb-4">
+                <option value="">Select Template</option>
+                {templates.map(t => <option key={t.id} value={t.id}>{t.name} ({t.productType})</option>)}
+              </select>
+              {errors.templateId && <p className="text-red-400 text-xs mt-1 mb-2">{errors.templateId.message}</p>}
+              
+              {selectedTemplate && (
+                <div className="flex gap-4 items-center bg-black/20 p-3 rounded-lg border border-white/5">
+                  {selectedTemplate.previewImage ? (
+                    <img src={selectedTemplate.previewImage} alt="Preview" className="w-16 h-16 object-contain rounded-md bg-white/5" />
+                  ) : (
+                    <div className="w-16 h-16 bg-white/5 rounded-md flex items-center justify-center text-xs text-white/30">No Preview</div>
+                  )}
+                  <div>
+                    <div className="text-sm text-white font-medium">{selectedTemplate.name}</div>
+                    <div className="text-xs text-white/50">
+                      {selectedTemplate.canvasWidth} x {selectedTemplate.canvasHeight} • {selectedTemplate.shape}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="md:col-span-2">
               <label className="block text-sm text-white/60 mb-1">Short Description</label>
@@ -265,14 +316,8 @@ export default function ProductForm({ product, categories, templates, onCancel, 
               <textarea {...register('description')} rows="4" className="w-full bg-black/20 border border-white/10 rounded-lg p-2 text-white"></textarea>
             </div>
             <div>
-              <label className="block text-sm text-white/60 mb-1">Shape Style</label>
-              <select {...register('shape')} className="w-full bg-black/20 border border-white/10 rounded-lg p-2 text-white [&>option]:bg-gray-900">
-                <option value="rectangle">Rectangle</option>
-                <option value="square">Square</option>
-                <option value="circle">Circle</option>
-                <option value="hexagon">Hexagon</option>
-                <option value="custom">Custom</option>
-              </select>
+              <label className="block text-sm text-white/60 mb-1">Shape Style (Auto-detected from template)</label>
+              <input type="text" readOnly {...register('shape')} className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-white/50 cursor-not-allowed" />
             </div>
             <div>
               <label className="block text-sm text-white/60 mb-1">Tags (comma separated)</label>
@@ -290,47 +335,92 @@ export default function ProductForm({ product, categories, templates, onCancel, 
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <h3 className="text-white font-medium">Dynamic Variants</h3>
-              <button type="button" onClick={() => appendVariant({ name: '', price: 0, stock: 0 })} className="flex items-center gap-1 text-sm bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg transition-colors">
+              <button type="button" onClick={() => appendVariant({ dim: '', thick: '', price: 0, discountprice: 0, stocks: 0 })} className="flex items-center gap-1 text-sm bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg transition-colors">
                 <HiPlus /> Add Variant
               </button>
             </div>
             {variantFields.map((field, index) => (
               <div key={field.id} className="grid grid-cols-2 md:grid-cols-6 gap-4 p-4 border border-white/10 rounded-xl relative">
                 <div className="md:col-span-2">
-                  <label className="block text-xs text-white/50 mb-1">Variant Name (e.g. 8x12 - 3mm)</label>
-                  <input {...register(`variants.${index}.name`)} className="w-full bg-black/20 border border-white/10 rounded p-1.5 text-white text-sm" />
+                  <label className="block text-xs text-white/50 mb-1">Dimension</label>
+                  <input {...register(`variants.${index}.dim`)} placeholder="1200x600" className="w-full bg-black/20 border border-white/10 rounded p-1.5 text-white text-sm" />
                 </div>
                 <div>
-                  <label className="block text-xs text-white/50 mb-1">Size</label>
-                  <input {...register(`variants.${index}.size`)} className="w-full bg-black/20 border border-white/10 rounded p-1.5 text-white text-sm" />
+                  <label className="block text-xs text-white/50 mb-1">Thickness</label>
+                  <input {...register(`variants.${index}.thick`)} placeholder="15mm" className="w-full bg-black/20 border border-white/10 rounded p-1.5 text-white text-sm" />
                 </div>
                 <div>
-                  <label className="block text-xs text-white/50 mb-1">Price</label>
-                  <input type="number" {...register(`variants.${index}.price`)} className="w-full bg-black/20 border border-white/10 rounded p-1.5 text-white text-sm" />
+                  <label className="block text-xs text-white/50 mb-1">Retail Price</label>
+                  <input type="number" step="0.01" {...register(`variants.${index}.price`)} className="w-full bg-black/20 border border-white/10 rounded p-1.5 text-white text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs text-white/50 mb-1">Discount Price</label>
+                  <input type="number" step="0.01" {...register(`variants.${index}.discountprice`)} className="w-full bg-black/20 border border-white/10 rounded p-1.5 text-white text-sm" />
                 </div>
                 <div>
                   <label className="block text-xs text-white/50 mb-1">Stock</label>
-                  <input type="number" {...register(`variants.${index}.stock`)} className="w-full bg-black/20 border border-white/10 rounded p-1.5 text-white text-sm" />
+                  <input type="number" {...register(`variants.${index}.stocks`)} className="w-full bg-black/20 border border-white/10 rounded p-1.5 text-white text-sm" />
                 </div>
                 <div className="flex items-end justify-end">
                   <button type="button" onClick={() => removeVariant(index)} className="p-2 text-red-400 hover:bg-red-400/10 rounded-lg"><HiTrash size={18} /></button>
                 </div>
               </div>
             ))}
-            {variantFields.length === 0 && <p className="text-white/40 text-sm italic">No variants added. Base price will be used.</p>}
+            {variantFields.length === 0 && <p className="text-white/40 text-sm italic">No variants added yet. Add at least one variant to publish this product.</p>}
           </div>
         )}
 
         {activeTab === 'Media' && (
           <div className="space-y-6">
-            <div className="flex items-center justify-center w-full">
-              <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-white/10 border-dashed rounded-xl cursor-pointer hover:bg-white/5 transition-colors">
-                <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                  <HiUpload className="w-10 h-10 mb-3 text-white/40" />
-                  <p className="mb-2 text-sm text-white/60"><span className="font-semibold">Click to upload</span> to Cloudinary</p>
+            {selectedTemplate && selectedTemplate.templateJson ? (
+              <div className="space-y-4 border border-white/10 rounded-xl p-6 bg-black/20">
+                <h3 className="text-white font-medium mb-4 flex justify-between items-center">
+                  <span>Template Preview Configuration</span>
+                  <button
+                    type="button"
+                    disabled={uploading}
+                    onClick={() => setTriggerExport(true)}
+                    className="px-4 py-2 gradient-primary text-white rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50"
+                  >
+                    Save Configured Preview
+                  </button>
+                </h3>
+                <div className="bg-black/40 rounded-xl p-4 overflow-hidden border border-white/5 relative flex justify-center w-full min-h-[400px]">
+                  <KonvaEditor 
+                    template={selectedTemplate.templateJson} 
+                    onExport={() => {}} 
+                    shape={selectedTemplate.shape || 'rectangle'} 
+                    triggerExport={triggerExport}
+                    onHighResExport={handleHighResExport}
+                  />
                 </div>
-                <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} disabled={uploading} />
-              </label>
+                <p className="text-sm text-white/50 text-center mt-2">
+                  You can click on the photo slots to upload images directly onto the template. Click "Save Configured Preview" to add it to your product media.
+                </p>
+              </div>
+            ) : (
+              <div className="p-4 bg-yellow-500/10 text-yellow-500 text-sm rounded-lg border border-yellow-500/20">
+                Please select a valid Template in the Basic tab to configure its preview.
+              </div>
+            )}
+
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-center w-full">
+                <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-white/10 border-dashed rounded-xl cursor-pointer hover:bg-white/5 transition-colors">
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <HiUpload className="w-10 h-10 mb-3 text-white/40" />
+                    <p className="mb-2 text-sm text-white/60"><span className="font-semibold">Click to upload</span> additional media to Cloudinary</p>
+                  </div>
+                  <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} disabled={uploading} />
+                </label>
+              </div>
+
+              <div className="p-4 border border-white/10 rounded-xl bg-black/10">
+                <label className="flex items-center gap-3 text-sm text-white cursor-pointer">
+                  <input type="checkbox" {...register('is3dEnabled')} className="form-checkbox h-5 w-5 rounded bg-black/20 border-white/10" />
+                  <span>Enable 3D View for this product</span>
+                </label>
+              </div>
             </div>
             
             {watchImages.length > 0 && (
@@ -349,45 +439,9 @@ export default function ProductForm({ product, categories, templates, onCancel, 
           </div>
         )}
 
-        {activeTab === 'Features' && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6 border-b border-white/10">
-              <div>
-                <label className="block text-sm text-white/60 mb-1">Available Sizes (comma separated)</label>
-                <input {...register('sizes')} placeholder="8x12, 12x18, 16x24" className="w-full bg-black/20 border border-white/10 rounded-lg p-2 text-white" />
-              </div>
-              <div>
-                <label className="block text-sm text-white/60 mb-1">Available Thicknesses (comma separated)</label>
-                <input {...register('thicknesses')} placeholder="3mm, 5mm, 8mm" className="w-full bg-black/20 border border-white/10 rounded-lg p-2 text-white" />
-              </div>
-            </div>
-
-             <div className="flex justify-between items-center">
-              <h3 className="text-white font-medium">Dynamic Features</h3>
-              <button type="button" onClick={() => appendFeature({ value: '' })} className="flex items-center gap-1 text-sm bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg transition-colors">
-                <HiPlus /> Add Feature
-              </button>
-            </div>
-            {featureFields.map((field, index) => (
-              <div key={field.id} className="flex items-center gap-2">
-                <input {...register(`features.${index}.value`)} placeholder="e.g. Waterproof, UV Printed" className="flex-1 bg-black/20 border border-white/10 rounded p-2 text-white text-sm" />
-                <button type="button" onClick={() => removeFeature(index)} className="p-2 text-red-400 hover:bg-red-400/10 rounded-lg"><HiTrash size={18} /></button>
-              </div>
-            ))}
-          </div>
-        )}
 
         {activeTab === 'Rules' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm text-white/60 mb-1">Template Base *</label>
-              <select {...register('templateId')} className="w-full bg-black/20 border border-white/10 rounded-lg p-2 text-white [&>option]:bg-gray-900">
-                <option value="">Select Template (JSON config)</option>
-                {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </select>
-              {errors.templateId && <p className="text-red-400 text-xs mt-1">{errors.templateId.message}</p>}
-              <p className="text-xs text-white/40 mt-2">To configure visual template regions, edit the Template JSON from the Templates tab.</p>
-            </div>
             <div>
               <label className="block text-sm text-white/60 mb-1">Max Upload Images</label>
               <input type="number" {...register('customizationRules.maxUploadImages')} className="w-full bg-black/20 border border-white/10 rounded-lg p-2 text-white" />

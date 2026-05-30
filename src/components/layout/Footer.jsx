@@ -4,16 +4,13 @@ import { FiInstagram, FiTwitter, FiFacebook, FiYoutube, FiMail, FiPhone } from '
 const FOOTER_LINKS = {
   Products: [
     { label: 'Acrylic Wall Photos', href: '/products?category=acrylic-wall-photo' },
-    { label: 'Circle Acrylic Prints', href: '/products?category=circle-acrylic' },
-    { label: 'Hexagon Clocks', href: '/products?category=hexagon-clock' },
     { label: 'Collage Frames', href: '/products?category=collage-frame' },
-    { label: 'Couple Gifts', href: '/products?category=couple-gift' },
+    { label: 'Gifts & Specials', href: '/products?category=couple-gift' },
   ],
   Company: [
     { label: 'About Us', href: '/about' },
     { label: 'Blog', href: '/blog' },
     { label: 'Careers', href: '/careers' },
-    { label: 'Press', href: '/press' },
   ],
   Support: [
     { label: 'FAQ', href: '/faq' },

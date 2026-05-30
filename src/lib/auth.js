@@ -44,9 +44,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return token;
     },
     async session({ session, token }) {
-      if (token) {
-        session.user.id = token.id;
-        session.user.role = token.role;
+      if (token?.id) {
+        // Verify user still exists in DB (handles stale JWTs after DB reset)
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id },
+          select: { id: true, role: true }
+        });
+        
+        if (dbUser) {
+          session.user.id = dbUser.id;
+          session.user.role = dbUser.role;
+        } else {
+          // If user was deleted from DB, clear the session user data
+          session.user = null;
+        }
       }
       return session;
     },

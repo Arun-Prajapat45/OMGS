@@ -8,24 +8,45 @@ async function getProductBySlug(slug) {
     include: {
       category: true,
       template: true,
-      variants: true,
       reviews: true,
-      productImages: true,
     }
   });
   
   if (!product) return null;
 
-  // Serialize Prisma objects for Client Component
+  // Fetch similar products in the same category
+  const similarProducts = product.categoryId ? await prisma.product.findMany({
+    where: {
+      categoryId: product.categoryId,
+      id: { not: product.id },
+      isActive: true,
+    },
+    take: 4,
+    include: {
+      category: true,
+    }
+  }) : [];
+
+  const normalizeVariant = (v) => ({
+    ...v,
+    dim: v.dim || v.size || v.name || 'Standard',
+    thick: v.thick != null ? String(v.thick) : String(v.thickness || 'Standard'),
+    price: parseFloat(v.price || 0),
+    discountprice: v.discountprice != null
+      ? parseFloat(v.discountprice)
+      : v.discountPrice != null
+        ? parseFloat(v.discountPrice)
+        : parseFloat(v.price || 0),
+  });
+
   return {
     ...product,
-    basePrice: parseFloat(product.basePrice),
-    discountPrice: product.discountPrice ? parseFloat(product.discountPrice) : null,
+    variants: Array.isArray(product.variants) ? product.variants.map(normalizeVariant) : [],
+    is3dEnabled: product.is3dEnabled ?? false,
+    threeDModelUrl: product.threeDModelUrl ?? null,
     createdAt: product.createdAt?.toISOString?.() ?? product.createdAt,
     updatedAt: product.updatedAt?.toISOString?.() ?? product.updatedAt,
     images: Array.isArray(product.images) ? product.images : (product.images ?? []),
-    sizes: Array.isArray(product.sizes) ? product.sizes : (product.sizes ?? []),
-    thicknesses: Array.isArray(product.thicknesses) ? product.thicknesses : (product.thicknesses ?? []),
     tags: Array.isArray(product.tags) ? product.tags : (product.tags ?? []),
     features: Array.isArray(product.features) ? product.features : (product.features ?? []),
     category: product.category ? {
@@ -39,6 +60,13 @@ async function getProductBySlug(slug) {
       updatedAt: product.template.updatedAt?.toISOString?.() ?? product.template.updatedAt,
       templateJson: typeof product.template.templateJson === 'string' ? JSON.parse(product.template.templateJson) : product.template.templateJson,
     } : null,
+    similarProducts: similarProducts.map(sp => ({
+      ...sp,
+      variants: Array.isArray(sp.variants) ? sp.variants.map(normalizeVariant) : [],
+      createdAt: sp.createdAt?.toISOString?.() ?? sp.createdAt,
+      updatedAt: sp.updatedAt?.toISOString?.() ?? sp.updatedAt,
+      images: Array.isArray(sp.images) ? sp.images : (sp.images ?? []),
+    })),
   };
 }
 

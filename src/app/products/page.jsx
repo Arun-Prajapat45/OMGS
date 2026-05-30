@@ -11,15 +11,26 @@ export const metadata = {
  * Decimal → number, Date → ISO string, Json → parsed object.
  */
 function serializeProduct(p) {
+  const normalizeVariant = (v) => ({
+    ...v,
+    dim: v.dim || v.size || v.name || 'Standard',
+    thick: v.thick != null ? String(v.thick) : String(v.thickness || 'Standard'),
+    price: Number(v.price ?? 0),
+    discountprice: v.discountprice != null
+      ? Number(v.discountprice)
+      : v.discountPrice != null
+        ? Number(v.discountPrice)
+        : Number(v.price ?? 0),
+  });
+
   return {
     ...p,
-    basePrice:     parseFloat(p.basePrice),
-    discountPrice: p.discountPrice ? parseFloat(p.discountPrice) : null,
+    variants: Array.isArray(p.variants) ? p.variants.map(normalizeVariant) : [],
+    is3dEnabled: p.is3dEnabled ?? false,
+    threeDModelUrl: p.threeDModelUrl ?? null,
     createdAt:     p.createdAt?.toISOString?.() ?? p.createdAt,
     updatedAt:     p.updatedAt?.toISOString?.() ?? p.updatedAt,
     images:        Array.isArray(p.images) ? p.images : (p.images ?? []),
-    sizes:         Array.isArray(p.sizes) ? p.sizes : (p.sizes ?? []),
-    thicknesses:   Array.isArray(p.thicknesses) ? p.thicknesses : (p.thicknesses ?? []),
     tags:          Array.isArray(p.tags) ? p.tags : (p.tags ?? []),
     features:      Array.isArray(p.features) ? p.features : (p.features ?? []),
     category: p.category

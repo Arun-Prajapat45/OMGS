@@ -1,4 +1,4 @@
-import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
+import { Inter, Plus_Jakarta_Sans, Playfair_Display, Montserrat, Oswald, Dancing_Script, Pacifico, Roboto } from 'next/font/google';
 import './globals.css';
 import ReduxProvider from '@/components/providers/ReduxProvider';
 import AuthProvider from '@/components/providers/AuthProvider';
@@ -20,7 +20,46 @@ const plusJakarta = Plus_Jakarta_Sans({
   display: 'swap',
 });
 
+const playfair = Playfair_Display({
+  subsets: ['latin'],
+  variable: '--font-playfair',
+  display: 'swap',
+});
+
+const montserrat = Montserrat({
+  subsets: ['latin'],
+  variable: '--font-montserrat',
+  display: 'swap',
+});
+
+const oswald = Oswald({
+  subsets: ['latin'],
+  variable: '--font-oswald',
+  display: 'swap',
+});
+
+const dancingScript = Dancing_Script({
+  subsets: ['latin'],
+  variable: '--font-dancing-script',
+  display: 'swap',
+});
+
+const pacifico = Pacifico({
+  subsets: ['latin'],
+  weight: ['400'],
+  variable: '--font-pacifico',
+  display: 'swap',
+});
+
+const roboto = Roboto({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-roboto',
+  display: 'swap',
+});
+
 export const metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
   title: {
     default: 'OMGS – Premium Custom Acrylic Photo Prints',
     template: '%s | OMGS',
@@ -56,7 +95,7 @@ export default async function RootLayout({ children }) {
   }
 
   return (
-    <html lang="en" className={`${inter.variable} ${plusJakarta.variable}`}>
+    <html lang="en" className={`${inter.variable} ${plusJakarta.variable} ${playfair.variable} ${montserrat.variable} ${oswald.variable} ${dancingScript.variable} ${pacifico.variable} ${roboto.variable}`}>
       <body className="font-sans bg-[var(--bg)] text-[var(--text)] antialiased">
         <AuthProvider session={session}>
           <ReduxProvider>

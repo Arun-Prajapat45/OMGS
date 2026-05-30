@@ -230,4 +230,124 @@ html.light {
     transform: translateY(-8px) scale(1.01);
     box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(99, 102, 241, 0.15);
   }
+
+  /* ─── Template Builder ─────────────────────────────────────────────── */
+
+  .builder-root {
+    padding-top: 100px;;
+    width: 100vw;
+    height: 100vh;
+    background: #0b0c15;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .builder-workspace {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  .builder-sidebar-left {
+    width: 224px;
+    flex-shrink: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .builder-sidebar-right {
+    width: 256px;
+    flex-shrink: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .builder-canvas-area {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: auto;
+    position: relative;
+    background: #0d0e1a;
+    scroll-behavior: smooth;
+  }
+
+  .builder-canvas-stage {
+    position: relative;
+  }
+
+  /* Custom scrollbar for builder panels */
+  .builder-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .builder-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .builder-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(99, 102, 241, 0.3);
+    border-radius: 2px;
+  }
+
+  .builder-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(99, 102, 241, 0.6);
+  }
+
+  /* Legacy custom-scrollbar alias for backward compat */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(99, 102, 241, 0.3);
+    border-radius: 2px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(99, 102, 241, 0.6);
+  }
+
+  /* Range input thumb styling (cross-browser) */
+  .builder-root input[type='range']::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: #6366f1;
+    cursor: pointer;
+    border: 2px solid #fff;
+    box-shadow: 0 0 4px rgba(99,102,241,0.5);
+    transition: transform 0.15s ease;
+  }
+
+  .builder-root input[type='range']::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+  }
+
+  .builder-root input[type='range']::-moz-range-thumb {
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: #6366f1;
+    cursor: pointer;
+    border: 2px solid #fff;
+  }
+
+  .builder-root input[type='range'] {
+    -webkit-appearance: none;
+    outline: none;
+  }
 }
+

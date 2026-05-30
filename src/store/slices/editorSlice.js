@@ -3,6 +3,8 @@ import { createSlice } from '@reduxjs/toolkit';
 const initialState = {
   template: null,
   layers: [],
+  textLayers: [],
+  borderColors: {},
   selectedLayerId: null,
   stageRef: null,
   history: [],
@@ -17,11 +19,17 @@ const editorSlice = createSlice({
   reducers: {
     setTemplate(state, action) {
       state.template = action.payload;
-      // Initialize layers from template regions
-      state.layers = (action.payload?.editableRegions || []).map((region) => ({
+      // Support both new elements[] format and legacy editableRegions[] format
+      const json = action.payload || {};
+      const regions = json.elements
+        ? json.elements.filter(el => el.type === 'image-placeholder' || el.type === 'text-mask' || el.type === 'svg-mask')
+        : (json.editableRegions || []);
+
+      state.layers = regions.map((region) => ({
         id: region.id,
         regionId: region.id,
-        type: region.type,
+        type: region.type || 'image-placeholder',
+        uploadSlot: region.uploadSlot || 1,
         image: null,
         imageUrl: null,
         x: 0,
@@ -30,6 +38,7 @@ const editorSlice = createSlice({
         scaleY: 1,
         rotation: 0,
         visible: true,
+        backgroundColor: '',
       }));
     },
     setLayerImage(state, action) {
@@ -74,6 +83,8 @@ const editorSlice = createSlice({
     },
     resetEditor(state) {
       state.layers = [];
+      state.textLayers = [];
+      state.borderColors = {};
       state.selectedLayerId = null;
       state.history = [];
       state.historyIndex = -1;
@@ -97,18 +108,41 @@ const editorSlice = createSlice({
         state.layers = state.history[state.historyIndex];
       }
     },
+
+    // ── Text Layer Management ─────────────────────────────────────────────────
+    addTextLayer(state, action) {
+      state.textLayers.push(action.payload);
+    },
+    updateTextLayer(state, action) {
+      const { id, ...updates } = action.payload;
+      const layer = state.textLayers.find((l) => l.id === id);
+      if (layer) Object.assign(layer, updates);
+    },
+    removeTextLayer(state, action) {
+      state.textLayers = state.textLayers.filter((l) => l.id !== action.payload);
+    },
+
+    // ── Shape / Border Color Overrides ─────────────────────────────────────────
+    setBorderColor(state, action) {
+      const { elementId, color } = action.payload;
+      state.borderColors[elementId] = color;
+    },
   },
 });
 
 export const selectTemplate = (state) => state.editor.template;
 export const selectLayers = (state) => state.editor.layers;
+export const selectTextLayers = (state) => state.editor.textLayers;
+export const selectBorderColors = (state) => state.editor.borderColors;
 export const selectSelectedLayer = (state) =>
   state.editor.layers.find((l) => l.id === state.editor.selectedLayerId);
+export const selectSelectedLayerId = (state) => state.editor.selectedLayerId;
 export const selectZoom = (state) => state.editor.zoom;
 export const selectExportQuality = (state) => state.editor.exportQuality;
 
 export const {
   setTemplate, setLayerImage, updateLayer, setSelectedLayer,
   setStageRef, setZoom, resetEditor, pushHistory, undo, redo,
+  addTextLayer, updateTextLayer, removeTextLayer, setBorderColor,
 } = editorSlice.actions;
 export default editorSlice.reducer;

@@ -12,22 +12,20 @@ export async function middleware(req) {
   const isProtectedRoute = pathname.startsWith('/account') || pathname.startsWith('/orders') || pathname.startsWith('/checkout');
   const isAuthRoute = pathname.startsWith('/auth');
 
+  let response = NextResponse.next();
+
   if (isAdminRoute && (!isLoggedIn || !isAdmin)) {
-    return NextResponse.redirect(new URL('/auth/login', req.url));
-  }
-
-  if (isProtectedRoute && !isLoggedIn) {
+    response = NextResponse.redirect(new URL('/auth/login', req.url));
+  } else if (isProtectedRoute && !isLoggedIn) {
     const callbackUrl = encodeURIComponent(pathname);
-    return NextResponse.redirect(new URL(`/auth/login?callbackUrl=${callbackUrl}`, req.url));
+    response = NextResponse.redirect(new URL(`/auth/login?callbackUrl=${callbackUrl}`, req.url));
+  } else if (isAuthRoute && isLoggedIn) {
+    response = NextResponse.redirect(new URL('/', req.url));
   }
 
-  if (isAuthRoute && isLoggedIn) {
-    return NextResponse.redirect(new URL('/', req.url));
-  }
-
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|_next/webpack-hmr).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|_next/webpack-hmr).*)'],
 };

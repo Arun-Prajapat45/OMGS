@@ -19,13 +19,17 @@ export async function GET(req) {
     const [products, total] = await Promise.all([
       prisma.product.findMany({
         where,
-        include: { category: true, variants: true },
+        include: {
+          category: true,
+          template: { select: { name: true, productType: true } },
+        },
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' }
       }),
       prisma.product.count({ where })
     ]);
+
 
     return NextResponse.json({ products, total, page, totalPages: Math.ceil(total / limit) });
   } catch (error) {
@@ -76,35 +80,26 @@ export async function POST(req) {
         description: data.description || null,
         categoryId: finalCategoryId,
         templateId: data.templateId,
-        basePrice: parseFloat(data.basePrice),
-        discountPrice: data.discountPrice ? parseFloat(data.discountPrice) : null,
         images: data.images || [],
-        sizes: data.sizes || [],
-        thicknesses: data.thicknesses || [],
+        variants: (data.variants || []).map((variant) => ({
+          dim: variant.dim || 'Standard',
+          thick: variant.thick != null ? String(variant.thick) : 'Standard',
+          price: parseFloat(variant.price || 0),
+          discountprice: variant.discountprice != null
+            ? parseFloat(variant.discountprice)
+            : parseFloat(variant.price || 0),
+          stocks: parseInt(variant.stocks || '0', 10),
+        })),
         tags: data.tags || [],
-        features: data.features || [],
         customizationRules: data.customizationRules || {},
         seo: data.seo || {},
         shape: data.shape || 'rectangle',
-        stock: parseInt(data.stock || '100', 10),
         isActive: data.isActive,
         isFeatured: data.isFeatured,
         isTrending: data.isTrending,
-        variants: {
-          create: (data.variants || []).map(v => ({
-            name: v.name,
-            size: v.size,
-            thickness: v.thickness,
-            frameType: v.frameType,
-            price: parseFloat(v.price),
-            discountPrice: v.discountPrice ? parseFloat(v.discountPrice) : null,
-            stock: parseInt(v.stock || '0', 10),
-            sku: v.sku,
-            isActive: v.isActive !== false
-          }))
-        }
+        is3dEnabled: data.is3dEnabled || false,
+        threeDModelUrl: data.threeDModelUrl || null,
       },
-      include: { variants: true }
     });
 
     return NextResponse.json({ success: true, product: newProduct }, { status: 201 });

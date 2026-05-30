@@ -152,6 +152,7 @@ export default function ProductsManager() {
                 <th className="pb-3 font-medium">Category</th>
                 <th className="pb-3 font-medium">Base Price</th>
                 <th className="pb-3 font-medium">Stock</th>
+                <th className="pb-3 font-medium">Template</th>
                 <th className="pb-3 font-medium">Variants</th>
                 <th className="pb-3 font-medium">Status</th>
                 <th className="pb-3 pr-2 font-medium text-right">Actions</th>
@@ -176,8 +177,24 @@ export default function ProductsManager() {
                     </div>
                   </td>
                   <td className="py-4 text-sm text-white/60">{p.category?.name}</td>
-                  <td className="py-4 text-sm text-white">{formatPrice(p.basePrice)}</td>
-                  <td className="py-4 text-sm text-white/60">{p.stock}</td>
+                  <td className="py-4 text-sm text-white">
+                    {formatPrice(
+                      Array.isArray(p.variants) && p.variants.length > 0
+                        ? Math.min(...p.variants.map((variant) => variant.discountprice != null ? Number(variant.discountprice) : Number(variant.price || 0)))
+                        : 0
+                    )}
+                  </td>
+                  <td className="py-4 text-sm text-white/60">{Array.isArray(p.variants) ? p.variants.reduce((sum, variant) => sum + Number(variant.stocks ?? variant.stock ?? 0), 0) : 0}</td>
+                  <td className="py-4">
+                    {p.template ? (
+                      <div>
+                        <div className="text-sm text-white">{p.template.name}</div>
+                        <div className="text-xs text-white/40 capitalize">{p.template.productType}</div>
+                      </div>
+                    ) : (
+                      <span className="text-white/40 text-xs italic">None</span>
+                    )}
+                  </td>
                   <td className="py-4 text-sm text-white/60">
                     <span className="px-2 py-0.5 bg-white/10 rounded-full text-xs">{p.variants?.length || 0}</span>
                   </td>

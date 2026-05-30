@@ -29,7 +29,7 @@ export const CLIP_PATHS = {
 // ─── SVG paths (viewBox 0 0 100 100) ─────────────────────────────────────────
 // Each path is optimized to fill the viewBox and center properly
 export const SVG_PATHS = {
-  heart: 'M50 88 C15 65 5 45 5 32 C5 18 15 8 28 8 C38 8 46 14 50 22 C54 14 62 8 72 8 C85 8 95 18 95 32 C95 45 85 65 50 88Z',
+  heart: 'M50 95 C10 75 0 45 10 22 C25 2 46 2 50 20 C54 2 75 2 90 22 C100 45 90 75 50 95Z',
   egg:   'M50 8 C78 8 92 28 92 52 C92 78 73 92 50 92 C27 92 8 78 8 52 C8 28 22 8 50 8Z',
   cloud: 'M20 50 C10 50 4 44 4 35 C4 26 10 19 20 19 C22 14 28 10 36 10 C46 10 54 16 56 25 C57 25 59 25 60 25 C70 25 78 33 78 43 C78 52 71 59 60 59 H20Z',
   wave:  'M0 50 Q15 20 30 50 Q45 80 60 50 Q75 20 90 50 Q95 65 100 50 L100 100 L0 100Z',
@@ -92,11 +92,39 @@ export function getKonvaClipFunc(shape, region) {
       }
 
       case 'heart': {
-        const cx = width / 2, cy = height / 2;
-        const s = Math.min(width, height) / 2;
-        ctx.moveTo(cx, cy + s * 0.35);
-        ctx.bezierCurveTo(cx - s * 1.1, cy - s * 0.4, cx - s * 1.8, cy + s * 0.4, cx, cy + s);
-        ctx.bezierCurveTo(cx + s * 1.8, cy + s * 0.4, cx + s * 1.1, cy - s * 0.4, cx, cy + s * 0.35);
+        const w = width;
+        const h = height;
+
+        ctx.moveTo(w / 2, h * 0.95);
+
+        // Bottom-left outer curve
+        ctx.bezierCurveTo(
+          w * 0.10, h * 0.75,
+          w * 0.00, h * 0.45,
+          w * 0.10, h * 0.22
+        );
+
+        // Upper-left lobe (more rounded)
+        ctx.bezierCurveTo(
+          w * 0.25, h * 0.02,
+          w * 0.46, h * 0.02,
+          w / 2, h * 0.20
+        );
+
+        // Upper-right lobe (more rounded)
+        ctx.bezierCurveTo(
+          w * 0.54, h * 0.02,
+          w * 0.75, h * 0.02,
+          w * 0.90, h * 0.22
+        );
+
+        // Bottom-right outer curve
+        ctx.bezierCurveTo(
+          w * 1.00, h * 0.45,
+          w * 0.90, h * 0.75,
+          w / 2, h * 0.95
+        );
+
         break;
       }
 

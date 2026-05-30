@@ -11,10 +11,18 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import { toggleWishlist, selectIsWishlisted } from '@/store/slices/wishlistSlice';
 import { formatPrice, getDiscountPercentage } from '@/lib/utils';
-import ProductShapePreview from '@/components/engine/ProductShapePreview';
+import { CLIP_PATHS, SVG_PATHS } from '@/components/engine/shapeRegistry';
 import { AcrylicDepthShadow, GlassReflection, FloatingCard } from '@/components/engine/AcrylicEffects';
 import { Edit2 } from 'lucide-react';
 import secondaryImage from '../../assets/secondary_image.png';
+
+const getProductMinPrice = (product) => {
+  if (!Array.isArray(product?.variants) || product.variants.length === 0) return 0;
+  return product.variants.reduce((min, variant) => {
+    const price = variant.discountprice != null ? Number(variant.discountprice) : Number(variant.price || 0);
+    return min === null || price < min ? price : min;
+  }, null) || 0;
+};
 
 const getImageDimensions = (shape) => {
   switch (shape?.toLowerCase()) {
@@ -31,29 +39,17 @@ const getImageDimensions = (shape) => {
   }
 };
 
-const OVAL_CLIP_PATH =
-  'ellipse(50% 40% at 50% 50%)';
-
-const EGG_CLIP_PATH =
-  'path("M50 1 C82 1 99 28 99 58 C99 84 78 99 50 99 C22 99 1 84 1 58 C1 28 18 1 50 1Z")';
-
-const HEART_CLIP_PATH =
-  'path("M50 95 L15 60 C-5 35 10 5 35 5 C48 5 50 18 50 18 C50 18 52 5 65 5 C90 5 105 35 85 60 Z")';
-
-const CLOUD_CLIP_PATH =
-  'path("M20 80 C5 80 0 68 0 55 C0 40 10 28 25 28 C28 12 42 0 58 0 C76 0 90 14 92 32 C97 32 100 32 100 32 C112 32 120 42 120 55 C120 69 110 80 96 80 Z")';
-
-
 function getShapeClipPath(shape) {
   const lower = shape?.toLowerCase();
   if (!lower) return undefined;
-  if (lower === 'circle') return 'circle(50% at 50% 50%)';
-  if (lower === 'hexagon') return 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)';
-  if (lower === 'triangle') return 'polygon(50% 0%, 100% 100%, 0% 100%)';
-  if (lower === 'heart') return HEART_CLIP_PATH;
-  if (lower === 'oval') return OVAL_CLIP_PATH;
-  if (lower === 'egg') return EGG_CLIP_PATH;
-  if (lower === 'cloud') return CLOUD_CLIP_PATH;
+
+  if (CLIP_PATHS[lower] != null) {
+    return CLIP_PATHS[lower];
+  }
+
+  // SVG-path shapes (heart, cloud, wave) CANNOT use CSS clip-path:path() —
+  // that uses absolute pixel coords, so a 0-100 path only clips ~100px.
+  // These are handled by SvgClipWrapper with objectBoundingBox instead.
   return undefined;
 }
 
@@ -82,34 +78,163 @@ function pointsToClipPath(region, template) {
 }
 
 function getRegionClipPath(region, template) {
-  const type = region?.type?.toLowerCase();
+  // Elements in the `elements[]` array store their mask shape under `region.mask.type`.
+  // Entries in `editableRegions[]` use `region.type` directly as the shape name.
+  const type = (region?.mask?.type || region?.type)?.toLowerCase();
   if (!type) return undefined;
 
-  if (type === 'circle') return 'circle(50% at 50% 50%)';
-  if (type === 'hexagon') return 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)';
-  if (type === 'triangle') return 'polygon(50% 0%, 0% 100%, 100% 100%)';
-  if (type === 'oval') return OVAL_CLIP_PATH;
-  if (type === 'egg') return EGG_CLIP_PATH;
-  if (type === 'heart') return HEART_CLIP_PATH;
-  if (type === 'cloud') return CLOUD_CLIP_PATH;
-  if (['polygon', 'custom'].includes(type)) return pointsToClipPath(region, template);
+  if (type === 'rectangle' || type === 'image-placeholder') return undefined;
+
+  if (type === 'svg' || type === 'custom') {
+    const svgPath = region?.svgPath || region?.mask?.svgPath || template?.svgPath;
+    return svgPath ? `path("${svgPath}")` : undefined;
+  }
+
+  if (CLIP_PATHS[type] != null) {
+    return CLIP_PATHS[type];
+  }
+
+  if (SVG_PATHS[type]) {
+    return `path("${SVG_PATHS[type]}")`;
+  }
+
+  if (type === 'diamond') return 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)';
+  if (['polygon'].includes(type)) return pointsToClipPath(region, template);
+
   return undefined;
+}
+
+function parseTemplateJson(templateJson) {
+  if (!templateJson) return null;
+  try {
+    return typeof templateJson === 'string' ? JSON.parse(templateJson) : templateJson;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Convert a photoEffects object into an inline CSS style object suitable for
+ * <img> elements in the product grid. We apply the filters that are trivially
+ * representable in CSS (brightness/contrast/saturation/hue/warmth/feather).
+ * Sparkle and glass are Konva-only — not shown here (grid is decorative).
+ */
+function buildPhotoEffectStyle(region) {
+  const fx = region?.photoEffects;
+  if (!fx) return {};
+
+  const filters = [];
+  if (fx.brightness) filters.push(`brightness(${1 + fx.brightness / 100})`);
+  if (fx.contrast)   filters.push(`contrast(${1 + fx.contrast / 100})`);
+  if (fx.saturation) filters.push(`saturate(${1 + fx.saturation / 100})`);
+  if (fx.hue)        filters.push(`hue-rotate(${fx.hue}deg)`);
+
+  // Feathering: approximate with CSS mask-image
+  let maskImage;
+  const featherType   = fx.featherType || 'none';
+  const featherRadius = (fx.featherRadius ?? 0) / 100;
+  if (featherType !== 'none' && featherRadius > 0) {
+    const stop = `${Math.round((1 - featherRadius) * 100)}%`;
+    if (featherType === 'radial' || featherType === 'vignette') {
+      maskImage = `radial-gradient(ellipse at center, black ${stop}, transparent 100%)`;
+    } else if (featherType === 'linear-top') {
+      maskImage = `linear-gradient(to bottom, transparent 0%, black ${Math.round(featherRadius * 100)}%, black 100%)`;
+    } else if (featherType === 'linear-bottom') {
+      maskImage = `linear-gradient(to top, transparent 0%, black ${Math.round(featherRadius * 100)}%, black 100%)`;
+    } else if (featherType === 'linear-left') {
+      maskImage = `linear-gradient(to right, transparent 0%, black ${Math.round(featherRadius * 100)}%, black 100%)`;
+    } else if (featherType === 'linear-right') {
+      maskImage = `linear-gradient(to left, transparent 0%, black ${Math.round(featherRadius * 100)}%, black 100%)`;
+    }
+  }
+
+  const style = {};
+  if (filters.length) style.filter = filters.join(' ');
+  if (maskImage) { style.maskImage = maskImage; style.WebkitMaskImage = maskImage; }
+  if (fx.photoBlendMode && fx.photoBlendMode !== 'source-over') style.mixBlendMode = fx.photoBlendMode;
+  if (fx.photoBlendOpacity !== undefined && fx.photoBlendOpacity !== 1) style.opacity = fx.photoBlendOpacity;
+
+  // Warmth: add a pseudo-color tint via sepia + hue-rotate approximation
+  if (fx.warmth && fx.warmth !== 0) {
+    const warm = fx.warmth;
+    if (warm > 0) {
+      // Warm: add orange tint
+      filters.push(`sepia(${warm * 0.004})`);
+      if (filters.length) style.filter = filters.join(' ');
+    }
+  }
+
+  return style;
+}
+
+function getUploadableRegions(template) {
+  if (!template) return [];
+  if (Array.isArray(template.elements)) {
+    return template.elements.filter((el) => (el.uploadSlot != null || el.uploadableSlot != null) && el.type !== 'background');
+  }
+  if (Array.isArray(template.editableRegions)) {
+    return template.editableRegions.filter((el) => el.type !== 'background');
+  }
+  return [];
+}
+
+// ── Extract template art background image ────────────────────────────────────
+// The background element in template.elements[] holds the decorative template
+// art (e.g. the rose plate). We surface this as `templateBackground` so the
+// card can render it as a full-canvas layer separate from the upload slot photo.
+function getTemplateBackground(parsed) {
+  if (!parsed) return null;
+  if (Array.isArray(parsed.elements)) {
+    const bg = parsed.elements.find((el) => el.type === 'background');
+    return bg?.src || null;
+  }
+  return null;
 }
 
 // ── Resolve template for a product ───────────────────────────────────────────
 function resolveTemplate(product) {
-  if (product?.template?.templateJson) {
-    try {
-      return typeof product.template.templateJson === 'string'
-        ? JSON.parse(product.template.templateJson)
-        : product.template.templateJson;
-    } catch { }
+  const parsed = parseTemplateJson(product?.template?.templateJson);
+  if (parsed) {
+    return {
+      ...parsed,
+      shape: parsed.shape || product?.shape || 'rectangle',
+      canvas: parsed.canvas || { width: 1000, height: 1000, backgroundColor: '#ffffff' },
+      editableRegions: parsed.editableRegions || [],
+      uploadableRegions: getUploadableRegions(parsed),
+      templateBackground: getTemplateBackground(parsed),
+    };
   }
+
   return {
     shape: product?.shape || 'rectangle',
     canvas: { width: 1000, height: 1000, backgroundColor: '#ffffff' },
-    editableRegions: []
+    editableRegions: [],
+    uploadableRegions: [],
+    templateBackground: null,
   };
+}
+
+function parseProductImages(images) {
+  if (!images) return [];
+  try {
+    return typeof images === 'string' ? JSON.parse(images) : images;
+  } catch {
+    return Array.isArray(images) ? images : [];
+  }
+}
+
+function getRegionImage(region, index, images, fallbackImage) {
+  if (!images || !images.length) return fallbackImage;
+  const slot = region?.uploadSlot != null
+    ? Number(region.uploadSlot)
+    : region?.uploadableSlot != null
+      ? Number(region.uploadableSlot)
+      : undefined;
+
+  if (Number.isFinite(slot) && slot > 0) {
+    return images[slot - 1] || images[index] || fallbackImage;
+  }
+  return images[index] || images[0] || fallbackImage;
 }
 
 // ── Star rating display ───────────────────────────────────────────────────────
@@ -196,119 +321,259 @@ function SizeStrip({ template }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// SvgClipWrapper — clips children to any SVG path, scaling to 100% of the box.
+// Uses clipPathUnits="objectBoundingBox" + path coords normalized to 0-1 space.
+// ─────────────────────────────────────────────────────────────────────────────
+function SvgClipWrapper({ svgPath, children }) {
+  // Derive a stable id from the first few chars of the path
+  const id = `svgclip-${svgPath.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10)}`;
+  // Normalize coordinates from 0–100 space → 0–1 objectBoundingBox space
+  const normalized = svgPath.replace(/([\d]+\.?[\d]*)/g, (n) =>
+    (parseFloat(n) / 100).toFixed(4)
+  );
+  return (
+    <div className="relative w-full h-full">
+      {/* Hidden SVG that defines the scalable clip path */}
+      <svg width="0" height="0" style={{ position: 'absolute', overflow: 'hidden' }}>
+        <defs>
+          <clipPath id={id} clipPathUnits="objectBoundingBox">
+            <path d={normalized} />
+          </clipPath>
+        </defs>
+      </svg>
+      {/* This div IS clipped to the shape AND is the positioning context for children */}
+      <div
+        className="absolute inset-0 overflow-hidden"
+        style={{ clipPath: `url(#${id})`, WebkitClipPath: `url(#${id})` }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Shared Card Image Block for Single Shapes & Collages
 // ─────────────────────────────────────────────────────────────────────────────
-function CardImageBlock({ product, template, isCollage, shape, isCircle, primaryImage, showSecondary }) {
-  let regionImages = [];
-  try {
-    regionImages = product.images ? (typeof product.images === 'string' ? JSON.parse(product.images) : product.images) : [];
-  } catch (e) { }
-
+export function CardImageBlock({ product, template, isCollage, shape, isCircle, primaryImage, showSecondary }) {
+  const regionImages = parseProductImages(product.images);
   const clipPath = getShapeClipPath(shape);
+  const svgPath = SVG_PATHS[shape?.toLowerCase()];
+  const isSvgShape = !!svgPath;  // heart, cloud, wave → use SvgClipWrapper
   const isHeart = shape === 'heart';
 
-  const dropShadowFilter = isHeart
-    ? 'drop-shadow(0 0 1px rgba(255,255,255,0.3)) drop-shadow(0 15px 30px rgba(255, 90, 145, 0.25)) drop-shadow(0 4px 6px rgba(0,0,0,0.4))'
-    : 'drop-shadow(0 0 1px rgba(255,255,255,0.15)) drop-shadow(6px 4px 6px rgba(0, 0, 0, 0.6))';
+  const dropShadowFilter = 'drop-shadow(0 0 1px rgba(255,255,255,0.15)) drop-shadow(6px 4px 6px rgba(0, 0, 0, 0.6))';
+
+  const singleSlotRegion = !isCollage && (template?.uploadableRegions?.length === 1)
+    ? template.uploadableRegions[0]
+    : null;
+
+  const canvasW = template?.canvas?.width || 1000;
+  const canvasH = template?.canvas?.height || 1000;
+
+  // The decorative template art (rose plate, borders, etc.) from the background element
+  const templateBackground = template?.templateBackground || null;
+
+  // SVG-path shapes use getImageDimensions; collages of non-SVG shapes use aspect-square
+  const outerClass = `relative flex items-center justify-center transition-all duration-500 ease-out group-hover:scale-[1.02] ${
+    isSvgShape || !isCollage ? getImageDimensions(shape) : 'w-[90%] aspect-square'
+  }`;
+
+  // Shared collage region renderer
+  const renderElements = () => {
+    const els = template?.elements 
+      ? [...template.elements].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0))
+      : (template?.uploadableRegions || []);
+
+    let slotCount = 0;
+
+    return els.map((el, i) => {
+      if (el.type === 'background') return null;
+
+      const isSlot = el.type === 'image-placeholder' || el.uploadSlot != null || el.uploadableSlot != null;
+      
+      const left   = ((el.x || 0) / canvasW) * 100;
+      const top    = ((el.y || 0) / canvasH) * 100;
+      const width  = ((el.width  || (el.radius ?? 0) * 2) / canvasW) * 100;
+      const height = ((el.height || (el.radius ?? 0) * 2) / canvasH) * 100;
+      const opacity = el.opacity ?? 1;
+      const mixBlendMode = el.blendMode && el.blendMode !== 'source-over' ? el.blendMode : undefined;
+      const transform = el.rotation ? `rotate(${el.rotation}deg)` : undefined;
+      const zIndex = el.zIndex || 0;
+
+      if (isSlot) {
+        const regionImg = getRegionImage(el, slotCount, regionImages, primaryImage);
+        slotCount++;
+        const regionClip = getRegionClipPath(el, template);
+        const fxStyle = buildPhotoEffectStyle(el);
+        return (
+          <div
+            key={el.id || i}
+            className="absolute overflow-hidden"
+            style={{
+              left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%`,
+              borderRadius: el.cornerRadius ? `${(el.cornerRadius / canvasW) * 100}%` : undefined,
+              border: '1px solid rgba(255,255,255,0.1)',
+              clipPath: regionClip, WebkitClipPath: regionClip,
+              transform, zIndex,
+            }}
+          >
+            <img src={regionImg} alt="" className="absolute inset-0 w-full h-full object-cover" style={fxStyle} />
+            <img
+              alt="" src={secondaryImage.src || secondaryImage}
+              style={{ transform: showSecondary ? 'translateX(0)' : 'translateX(-100%)', transition: 'transform 600ms linear' }}
+              className="absolute inset-0 w-full h-full object-cover opacity-80"
+            />
+          </div>
+        );
+      } else if (el.src) {
+        return (
+          <div
+            key={el.id || i}
+            className="absolute pointer-events-none"
+            style={{
+              left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%`,
+              opacity, mixBlendMode, transform, zIndex,
+            }}
+          >
+            <img src={el.src} alt="" className="w-full h-full object-cover" />
+          </div>
+        );
+      } else if (el.type === 'shape') {
+        return (
+          <div
+            key={el.id || i}
+            className="absolute pointer-events-none"
+            style={{
+              left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%`,
+              opacity, mixBlendMode, transform, zIndex,
+              backgroundColor: el.fill,
+              border: el.strokeWidth ? `${el.strokeWidth}px solid ${el.stroke}` : undefined,
+              borderRadius: el.shapeType === 'circle' ? '50%' : el.cornerRadius ? `${(el.cornerRadius / canvasW) * 100}%` : undefined,
+            }}
+          />
+        );
+      }
+      return null;
+    });
+  };
+
+  // Shared single-slot renderer
+  const renderSingleSlot = () => {
+    if (singleSlotRegion) {
+      const r = singleSlotRegion;
+      const fxStyle = buildPhotoEffectStyle(r);
+      const slotLeft   = (r.x / canvasW) * 100;
+      const slotTop    = (r.y / canvasH) * 100;
+      const slotWidth  = ((r.width  || (r.radius ?? 0) * 2) / canvasW) * 100;
+      const slotHeight = ((r.height || (r.radius ?? 0) * 2) / canvasH) * 100;
+      const slotClip   = getRegionClipPath(r, template);
+      return (
+        <div
+          className="absolute overflow-hidden"
+          style={{
+            left: `${slotLeft}%`, top: `${slotTop}%`,
+            width: `${slotWidth}%`, height: `${slotHeight}%`,
+            clipPath: slotClip, WebkitClipPath: slotClip,
+            transform: r.rotation ? `rotate(${r.rotation}deg)` : undefined,
+          }}
+        >
+          <img alt={product.name || 'Product Image'} loading="lazy" src={primaryImage} className="absolute inset-0 w-full h-full object-cover" style={fxStyle} />
+          <img
+            alt={`${product.name} alternate`} loading="lazy" src={secondaryImage.src || secondaryImage}
+            style={{ transform: showSecondary ? 'translateX(0)' : 'translateX(-100%)', transition: 'transform 600ms linear' }}
+            className="absolute inset-0 w-full h-full object-cover opacity-90"
+          />
+        </div>
+      );
+    }
+    return (
+      <>
+        <img alt={product.name || 'Product Image'} loading="lazy" src={primaryImage} className="absolute inset-0 w-full h-full object-cover" />
+        <img
+          alt={`${product.name} alternate`} loading="lazy" src={secondaryImage.src || secondaryImage}
+          style={{ transform: showSecondary ? 'translateX(0)' : 'translateX(-100%)', transition: 'transform 600ms linear' }}
+          className="absolute inset-0 w-full h-full object-cover opacity-90"
+        />
+      </>
+    );
+  };
+
+  // Shared canvas background layer
+  const canvasBg = templateBackground
+    ? <img alt="" src={templateBackground} className="absolute inset-0 w-full h-full object-cover" />
+    : <div className="absolute inset-0" style={{ background: template?.canvas?.backgroundColor || '#111118' }} />;
+
+  // Shared gloss overlay
+  const glossOverlay = (
+    <div className="absolute inset-0 pointer-events-none z-10">
+      <div className="absolute inset-0 opacity-50 mix-blend-overlay" style={{ background: 'radial-gradient(120% 120% at 50% 0%, rgba(255,255,255,0.4) 0%, transparent 50%), radial-gradient(120% 120% at 50% 100%, rgba(0,0,0,0.8) 0%, transparent 50%)' }} />
+      <div className="absolute top-0 left-0 w-full h-full opacity-20 bg-gradient-to-br from-white/40 via-transparent to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 transform -translate-x-full group-hover:translate-x-full" />
+    </div>
+  );
 
   return (
     <div
-      className={`relative flex items-center justify-center transition-all duration-500 ease-out group-hover:scale-[1.02] ${isCollage ? 'w-[90%] aspect-square' : getImageDimensions(shape)}`}
+      className={outerClass}
       style={{
         filter: dropShadowFilter,
-        // Add overflow space for scaled shapes and shadows
-        padding: shape === 'heart' ? '8px' : shape === 'cloud' ? '6px' : shape === 'egg' ? '4px' : '0'
+        padding: shape === 'heart' ? '8px' : shape === 'cloud' ? '6px' : shape === 'egg' ? '4px' : '0',
       }}
     >
-      <div
-        className="w-full h-full relative overflow-hidden bg-black flex items-center justify-center"
-        style={{
-          borderRadius: isCircle && !isCollage ? '50%' : clipPath ? '0' : '6px',
-          clipPath: clipPath,
-          WebkitClipPath: clipPath,
-          // Use transform only if necessary, otherwise skip for clean centering
-          transform:
-            shape === 'heart'
-              ? 'scale(1.05)'
-              : shape === 'cloud'
-                ? 'scale(1.02)'
-                : shape === 'egg'
-                  ? 'scale(1.01)'
-                  : 'scale(1)',
-          transformOrigin: 'center',
-        }}
-      >
-        {isCollage ? (
-          <div className="absolute inset-0" style={{ background: template?.canvas?.backgroundColor || '#111118' }}>
-            {template.editableRegions?.map((region, i) => {
-              const regionImg = regionImages[i] || primaryImage;
-              const canvasW = template.canvas?.width || 1000;
-              const canvasH = template.canvas?.height || 1000;
-              const left = (region.x / canvasW) * 100;
-              const top = (region.y / canvasH) * 100;
-              const width = ((region.width || region.radius * 2) / canvasW) * 100;
-              const height = ((region.height || region.radius * 2) / canvasH) * 100;
-
-              const regionClip = getRegionClipPath(region, template);
-
-              return (
-                <div
-                  key={region.id || i}
-                  className="absolute overflow-hidden"
-                  style={{
-                    left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%`,
-                    borderRadius: region.cornerRadius ? `${(region.cornerRadius / canvasW) * 100}%` : undefined,
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    clipPath: regionClip,
-                    WebkitClipPath: regionClip,
-                  }}
-                >
-                  <img src={regionImg} alt="" className="absolute inset-0 w-full h-full object-cover" />
-                  <img
-                    alt=""
-                    src={secondaryImage.src || secondaryImage}
-                    style={{
-                      transform: showSecondary ? 'translateX(0)' : 'translateX(-100%)',
-                      transition: 'transform 600ms linear'
-                    }}
-                    className="absolute inset-0 w-full h-full object-cover opacity-80"
-                  />
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <>
-            <img
-              alt={product.name || 'Product Image'}
-              loading="lazy"
-              src={primaryImage}
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-            <img
-              alt={`${product.name} alternate`}
-              loading="lazy"
-              src={secondaryImage.src || secondaryImage}
-              style={{
-                transform: showSecondary ? 'translateX(0)' : 'translateX(-100%)',
-                transition: 'transform 600ms linear'
-              }}
-              className="absolute inset-0 w-full h-full object-cover opacity-90"
-            />
-          </>
-        )}
-
-        <div className="absolute inset-0 pointer-events-none z-10">
-          <div
-            className="absolute inset-0 opacity-50 mix-blend-overlay"
-            style={{
-              background: 'radial-gradient(120% 120% at 50% 0%, rgba(255,255,255,0.4) 0%, transparent 50%), radial-gradient(120% 120% at 50% 100%, rgba(0,0,0,0.8) 0%, transparent 50%)'
-            }}
-          ></div>
-          <div className="absolute top-0 left-0 w-full h-full opacity-20 bg-gradient-to-br from-white/40 via-transparent to-transparent"></div>
-          <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 transform -translate-x-full group-hover:translate-x-full"></div>
+      {isSvgShape ? (
+        /* ── SVG-path shapes (heart, cloud, wave) ──
+           Fill the primary image straight into the shape, same as circle/hexagon.
+           Slot-based positioning is NOT used here because template slot coords
+           are relative to large canvas dimensions and cause the image to appear
+           only in a small corner of the visible shape area. */
+        <SvgClipWrapper svgPath={svgPath}>
+          <img
+            alt={product.name || 'Product Image'}
+            loading="lazy"
+            src={primaryImage}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+          <img
+            alt={`${product.name} alternate`}
+            loading="lazy"
+            src={secondaryImage.src || secondaryImage}
+            style={{ transform: showSecondary ? 'translateX(0)' : 'translateX(-100%)', transition: 'transform 600ms linear' }}
+            className="absolute inset-0 w-full h-full object-cover opacity-90"
+          />
+          {glossOverlay}
+        </SvgClipWrapper>
+      ) : (
+        /* ── CSS clip-path shapes (circle, hexagon, etc.) or plain rectangles ── */
+        <div
+          className="w-full h-full relative overflow-hidden bg-black flex items-center justify-center"
+          style={{
+            borderRadius: isCircle && !isCollage ? '50%' : clipPath ? '0' : '6px',
+            clipPath, WebkitClipPath: clipPath,
+            transform: shape === 'cloud' ? 'scale(1.02)' : shape === 'egg' ? 'scale(1.01)' : 'scale(1)',
+            transformOrigin: 'center',
+          }}
+        >
+          {template?.elements && template.elements.length > 0 ? (
+            <div className="absolute inset-0" style={{ background: template?.canvas?.backgroundColor || '#111118' }}>
+              {templateBackground && <img src={templateBackground} alt="" className="absolute inset-0 w-full h-full object-cover" />}
+              {renderElements()}
+            </div>
+          ) : isCollage ? (
+            <div className="absolute inset-0" style={{ background: template?.canvas?.backgroundColor || '#111118' }}>
+              {templateBackground && <img src={templateBackground} alt="" className="absolute inset-0 w-full h-full object-cover" />}
+              {renderElements()}
+            </div>
+          ) : (
+            <>
+              {canvasBg}
+              {renderSingleSlot()}
+            </>
+          )}
+          {glossOverlay}
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -316,11 +581,11 @@ function CardImageBlock({ product, template, isCollage, shape, isCircle, primary
 // ─────────────────────────────────────────────────────────────────────────────
 // ProductCard — template-driven card
 // ─────────────────────────────────────────────────────────────────────────────
-function ProductCard({ product, index, showSecondary }) {
+export function ProductCard({ product, index, showSecondary }) {
   const template = useMemo(() => resolveTemplate(product), [product]);
   const shape = template?.shape || product?.shape || 'rectangle';
   const isCircle = shape?.toLowerCase() === 'circle';
-  const isCollage = (template?.editableRegions?.length || 0) > 1;
+  const isCollage = (template?.uploadableRegions?.length || 0) > 1;
 
   const primaryImage = product.featuredImage || (product.images && product.images[0]) || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&q=80';
 
@@ -426,17 +691,16 @@ function SortBar({ total, sort, onSort, viewMode, onViewMode }) {
 // ─────────────────────────────────────────────────────────────────────────────
 const SHAPE_PILLS = [
   { value: 'all', label: 'All', icon: '🔳' },
-  { value: 'circle', label: 'Circle', icon: '⭕' },
-  { value: 'hexagon', label: 'Hexagon', icon: '⬡' },
-  { value: 'square', label: 'Square', icon: '⬜' },
-  { value: 'portrait', label: 'Portrait', icon: '🖼' },
-  { value: 'landscape', label: 'Landscape', icon: '🌄' },
-  { value: 'triangle', label: 'Triangle', icon: '🔺' },
-  { value: 'oval', label: 'Oval', icon: '🟠' },
-  { value: 'egg', label: 'Egg', icon: '🥚' },
-  { value: 'heart', label: 'Heart', icon: '❤️' },
-  { value: 'cloud', label: 'Cloud', icon: '☁️' },
-  { value: 'custom', label: 'Custom', icon: '✨' },
+  { value: 'circle', label: 'Circle', icon: '' },
+  { value: 'hexagon', label: 'Hexagon', icon: '' },
+  { value: 'square', label: 'Square', icon: '' },
+  { value: 'portrait', label: 'Portrait', icon: '' },
+  { value: 'landscape', label: 'Landscape', icon: '' },
+  { value: 'triangle', label: 'Triangle', icon: '' },
+  { value: 'oval', label: 'Oval', icon: '' },
+  { value: 'egg', label: 'Egg', icon: '' },
+  { value: 'heart', label: 'Heart', icon: '' },
+  { value: 'cloud', label: 'Cloud', icon: '' }
 ];
 
 function ShapePills({ active, onChange }) {
@@ -467,7 +731,7 @@ function ProductListCard({ product, index, showSecondary }) {
   const template = useMemo(() => resolveTemplate(product), [product]);
   const shape = template?.shape || product?.shape || 'rectangle';
   const isCircle = shape?.toLowerCase() === 'circle';
-  const isCollage = (template?.editableRegions?.length || 0) > 1;
+  const isCollage = (template?.uploadableRegions?.length || 0) > 1;
 
   const primaryImage = product.featuredImage || (product.images && product.images[0]) || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&q=80';
 
@@ -585,10 +849,10 @@ export default function ProductGrid({ searchParams, products = [] }) {
     // Sort
     switch (sort) {
       case 'price-asc':
-        result.sort((a, b) => parseFloat(a.discountPrice || a.basePrice) - parseFloat(b.discountPrice || b.basePrice));
+        result.sort((a, b) => getProductMinPrice(a) - getProductMinPrice(b));
         break;
       case 'price-desc':
-        result.sort((a, b) => parseFloat(b.discountPrice || b.basePrice) - parseFloat(a.discountPrice || a.basePrice));
+        result.sort((a, b) => getProductMinPrice(b) - getProductMinPrice(a));
         break;
       case 'newest':
         result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));

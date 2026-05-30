@@ -56,6 +56,17 @@ export async function POST(req) {
         shippingAddress,
         status: 'PENDING',
         paymentStatus: 'PENDING',
+        orderItems: {
+          create: items.map((item) => ({
+            productId: item.productId,
+            designId: item.designId || null,
+            quantity: item.quantity,
+            size: item.size || null,
+            thickness: item.thickness || null,
+            price: item.price,
+            customData: item.customData || null,
+          })),
+        },
       },
     });
 

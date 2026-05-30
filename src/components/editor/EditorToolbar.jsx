@@ -1,7 +1,7 @@
 'use client';
 
 import { HiDownload, HiRefresh } from 'react-icons/hi';
-import { MdUndo, MdRedo } from 'react-icons/md';
+import { MdUndo, MdZoomIn, MdZoomOut, Md3dRotation} from 'react-icons/md';
 import { useDispatch } from 'react-redux';
 import { undo, redo, resetEditor } from '@/store/slices/editorSlice';
 import toast from 'react-hot-toast';
@@ -23,7 +23,7 @@ export default function EditorToolbar({ stageRef, onExport }) {
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
-      <div className="flex items-center gap-1 glass rounded-xl p-1">
+      <div className="flex items-center gap-1 glass rounded p-1">
         <button
           onClick={() => dispatch(undo())}
           className="p-2 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-all"
@@ -31,13 +31,7 @@ export default function EditorToolbar({ stageRef, onExport }) {
         >
           <MdUndo className="w-4 h-4" />
         </button>
-        <button
-          onClick={() => dispatch(redo())}
-          className="p-2 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-all"
-          title="Redo"
-        >
-          <MdRedo className="w-4 h-4" />
-        </button>
+        
         <div className="w-px h-6 bg-white/10" />
         <button
           onClick={() => dispatch(resetEditor())}
@@ -46,6 +40,23 @@ export default function EditorToolbar({ stageRef, onExport }) {
         >
           <HiRefresh className="w-4 h-4" />
         </button>
+        <div className="w-px h-6 bg-white/10" />
+        <button
+          onClick={() => dispatch((zoom) => zoom + 0.1)}
+          className="p-2 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-all"
+          title="Zoom In"
+        >
+          <MdZoomIn className="w-4 h-4" />
+        </button>
+        <div className="w-px h-6 bg-white/10" />
+        <button
+          onClick={() => dispatch((zoom) => zoom - 0.1)}
+          className="p-2 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-all"
+          title="Zoom Out"
+        >
+          <MdZoomOut className="w-4 h-4" />
+        </button>
+        <div className="w-px h-6 bg-white/10" />
         <button
           onClick={handleExport}
           className="p-2 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-all"
