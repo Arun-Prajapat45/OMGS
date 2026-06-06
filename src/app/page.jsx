@@ -7,7 +7,7 @@ import ProductShowcase from '@/components/home/ProductShowcase';
 import CtaBanner from '@/components/home/CtaBanner';
 
 export const metadata = {
-  title: 'OMGS – Premium Custom Acrylic Photo Prints',
+  title: 'Adore – Premium Custom Acrylic Photo Prints',
   description: 'Create stunning custom acrylic wall photos, clocks, hexagon frames and collages.',
 };
 
@@ -20,7 +20,6 @@ export default function HomePage() {
       <ShapeCategories />
       <HowItWorks />
       <CustomerReviews />
-      <CtaBanner />
     </>
   );
 }

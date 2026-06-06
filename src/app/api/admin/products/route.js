@@ -21,6 +21,7 @@ export async function GET(req) {
         where,
         include: {
           category: true,
+          subCategory: true,
           template: { select: { name: true, productType: true } },
         },
         skip,
@@ -79,6 +80,7 @@ export async function POST(req) {
         shortDescription: data.shortDescription || null,
         description: data.description || null,
         categoryId: finalCategoryId,
+        subCategoryId: data.subCategoryId || null,
         templateId: data.templateId,
         images: data.images || [],
         variants: (data.variants || []).map((variant) => ({

@@ -83,6 +83,7 @@ export async function PUT(req, { params }) {
         shortDescription: data.shortDescription || null,
         description: data.description || null,
         categoryId: finalCategoryId,
+        subCategoryId: data.subCategoryId || null,
         templateId: data.templateId,
         images: data.images || [],
         variants: (data.variants || []).map((variant) => ({

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo, useEffect, Suspense } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
 import {
@@ -21,7 +21,7 @@ import BorderColorPanel from '@/components/editor/BorderColorPanel';
 import { ProductCard } from '@/components/products/ProductGrid';
 import {
   selectLayers, selectTextLayers, selectSelectedLayerId,
-  addTextLayer, setSelectedLayer,
+  addTextLayer, setSelectedLayer, scaleEditorState,
 } from '@/store/slices/editorSlice';
 import { useCart } from '@/hooks/useCart';
 import toast from 'react-hot-toast';
@@ -75,13 +75,13 @@ function ProductModel({ imageUrl }) {
 
 export default function ProductDetailClient({ product }) {
   const dispatch = useDispatch();
-  const { addAndOpenCart, isLoggedIn } = useCart();
+  const { addAndOpenCart, isLoggedIn, items } = useCart();
 
   const layers = useSelector(selectLayers);
   const textLayers = useSelector(selectTextLayers);
   const selectedLayerId = useSelector(selectSelectedLayerId);
 
-  const template = product?.template?.templateJson || product?.template;
+  const baseTemplate = product?.template?.templateJson || product?.template;
   const hasVariants = product?.variants && product.variants.length > 0;
 
   // ── Variant state ───────────────────────────────────────────────────────────
@@ -131,6 +131,66 @@ export default function ProductDetailClient({ product }) {
     }
     return selectedVariant;
   }, [hasVariants, hasIndependentDims, product.variants, selectedSize, selectedThickness, selectedVariant]);
+
+  const [template, setTemplate] = useState(baseTemplate);
+  const prevSizeRef = useRef(null);
+
+  useEffect(() => {
+    if (!baseTemplate || !matchedVariant) {
+      setTemplate(baseTemplate);
+      return;
+    }
+
+    const sizeStr = matchedVariant.size || matchedVariant.dim || matchedVariant.name;
+    const match = sizeStr?.match(/(\d+(?:\.\d+)?)\s*x\s*(\d+(?:\.\d+)?)/i);
+    if (!match) {
+      setTemplate(baseTemplate);
+      return;
+    }
+
+    const isRectangle = product?.shape?.toLowerCase() === 'rectangle';
+    const targetW = parseFloat(match[1]) * (isRectangle ? 15 : 30);
+    const targetH = parseFloat(match[2]) * 30;
+
+    const origW = baseTemplate.canvas?.width || targetW;
+    const origH = baseTemplate.canvas?.height || targetH;
+
+    const scaleX = targetW / origW;
+    const scaleY = targetH / origH;
+    const uniformScale = Math.min(scaleX, scaleY);
+
+    const elements = (baseTemplate.elements || []).map(el => ({
+      ...el,
+      x: el.x != null ? el.x * scaleX : undefined,
+      y: el.y != null ? el.y * scaleY : undefined,
+      width: el.width != null ? el.width * scaleX : undefined,
+      height: el.height != null ? el.height * scaleY : undefined,
+      radius: el.radius != null ? el.radius * uniformScale : undefined,
+      fontSize: el.fontSize != null ? el.fontSize * uniformScale : undefined,
+    }));
+
+    const newTemplate = {
+      ...baseTemplate,
+      canvas: {
+        ...baseTemplate.canvas,
+        width: targetW,
+        height: targetH,
+      },
+      elements,
+    };
+
+    setTemplate(newTemplate);
+
+    if (prevSizeRef.current) {
+      const { w: prevW, h: prevH } = prevSizeRef.current;
+      if (prevW !== targetW || prevH !== targetH) {
+        const relScaleX = targetW / prevW;
+        const relScaleY = targetH / prevH;
+        dispatch(scaleEditorState({ scaleX: relScaleX, scaleY: relScaleY }));
+      }
+    }
+    prevSizeRef.current = { w: targetW, h: targetH };
+  }, [baseTemplate, matchedVariant, dispatch]);
 
   const availableThicknessesForSize = useCallback(
     (size) => product.variants
@@ -187,12 +247,45 @@ export default function ProductDetailClient({ product }) {
   const [triggerExport, setTriggerExport] = useState(false);
   const [cartActionData, setCartActionData] = useState(null);
   const [customRequirements, setCustomRequirements] = useState('');
-  
+
   // ── New Features State ───────────────────────────────────────────────────────
   const [hasStuds, setHasStuds] = useState(false);
   const [addFrame, setAddFrame] = useState(false);
   const [selectedFrame, setSelectedFrame] = useState(null);
   const [is3DModalOpen, setIs3DModalOpen] = useState(false);
+
+  const hasPreloadedRef = useRef(false);
+
+  useEffect(() => {
+    if (hasPreloadedRef.current) return;
+    const searchParams = new URLSearchParams(window.location.search);
+    const designId = searchParams.get('designId');
+    if (designId && items.length > 0) {
+      const cartItem = items.find(i => i.designId === designId);
+      if (cartItem && cartItem.customData) {
+        if (cartItem.customData.hasStuds) {
+          setHasStuds(true);
+        }
+        if (cartItem.customData.selectedFrame) {
+          setAddFrame(true);
+          setSelectedFrame(cartItem.customData.selectedFrame);
+        }
+        if (cartItem.customData.customRequirements) {
+          setCustomRequirements(cartItem.customData.customRequirements);
+        }
+        hasPreloadedRef.current = true;
+      }
+    }
+  }, [items]);
+
+  useEffect(() => {
+    const savedFrame = sessionStorage.getItem('selectedFrame');
+    if (savedFrame) {
+      setAddFrame(true);
+      setSelectedFrame(savedFrame);
+      sessionStorage.removeItem('selectedFrame');
+    }
+  }, []);
 
   const FRAME_PREVIEWS = [
     'istockphoto-104714504-612x612.jpg',
@@ -306,6 +399,7 @@ export default function ProductDetailClient({ product }) {
 
     await addAndOpenCart({
       productId: product.id,
+      productSlug: product.slug,
       designId: finalDesignId,
       name: product.name,
       size: matchedVariant ? (matchedVariant.size || matchedVariant.name) : (selectedSize || 'Standard'),
@@ -318,6 +412,7 @@ export default function ProductDetailClient({ product }) {
         customRequirements: customRequirements.trim(),
         hasStuds,
         selectedFrame: addFrame ? selectedFrame : null,
+        variant: matchedVariant,
       },
       image: finalImageUrl,
     });
@@ -421,11 +516,10 @@ export default function ProductDetailClient({ product }) {
                     <button
                       key={tab.id}
                       onClick={() => setEditorTab(tab.id)}
-                      className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-sm font-medium transition-all ${
-                        editorTab === tab.id
-                          ? 'text-primary-400 border-b-2 border-primary-500 bg-primary-500/5'
-                          : 'text-white/50 hover:text-white/80 border-b-2 border-transparent'
-                      }`}
+                      className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-sm font-medium transition-all ${editorTab === tab.id
+                        ? 'text-primary-400 border-b-2 border-primary-500 bg-primary-500/5'
+                        : 'text-white/50 hover:text-white/80 border-b-2 border-transparent'
+                        }`}
                     >
                       <span>{tab.emoji}</span>
                       <span>{tab.label}</span>
@@ -478,11 +572,10 @@ export default function ProductDetailClient({ product }) {
                               <button
                                 key={tl.id}
                                 onClick={() => dispatch(setSelectedLayer(tl.id))}
-                                className={`w-full text-left px-3 py-2 rounded text-sm transition-all flex items-center gap-2 ${
-                                  selectedLayerId === tl.id
-                                    ? 'bg-primary-500/20 text-primary-300 border border-primary-500/30'
-                                    : 'glass text-white/70 hover:text-white'
-                                }`}
+                                className={`w-full text-left px-3 py-2 rounded text-sm transition-all flex items-center gap-2 ${selectedLayerId === tl.id
+                                  ? 'bg-primary-500/20 text-primary-300 border border-primary-500/30'
+                                  : 'glass text-white/70 hover:text-white'
+                                  }`}
                               >
                                 <MdTextFields className="w-3.5 h-3.5 flex-shrink-0" />
                                 <span className="truncate">{tl.text || 'Empty text'}</span>
@@ -571,25 +664,14 @@ export default function ProductDetailClient({ product }) {
                     </h3>
                     <div className="flex flex-wrap gap-2">
                       {sizes.map((size) => {
-                        const available = !selectedThickness
-                          ? product.variants.some((v) => (v.dim || v.size || v.name) === size)
-                          : product.variants.some((v) => {
-                              const variantSize = v.dim || v.size || v.name;
-                              const variantThick = v.thick != null ? String(v.thick) : (v.thickness != null ? String(v.thickness) : null);
-                              return variantSize === size && variantThick === selectedThickness;
-                            });
                         return (
                           <button
                             key={size}
                             onClick={() => handleSelectSize(size)}
-                            disabled={!available}
-                            className={`px-4 py-2 rounded text-sm font-medium transition-all border ${
-                              selectedSize === size
-                                ? 'gradient-primary border-primary-500 text-white glow'
-                                : available
-                                ? 'border-white/15 text-white/60 hover:border-white/40 hover:text-white glass'
-                                : 'border-white/5 text-white/20 cursor-not-allowed line-through'
-                            }`}
+                            className={`px-4 py-2 rounded text-sm font-medium transition-all border ${selectedSize === size
+                              ? 'gradient-primary border-primary-500 text-white glow'
+                              : 'border-white/15 text-white/60 hover:border-white/40 hover:text-white glass'
+                              }`}
                           >
                             {size}
                           </button>
@@ -609,28 +691,14 @@ export default function ProductDetailClient({ product }) {
                     </h3>
                     <div className="flex flex-wrap gap-2">
                       {thicknesses.map((thick) => {
-                        const available = !selectedSize
-                          ? product.variants.some((v) => {
-                              const variantThick = v.thick != null ? String(v.thick) : (v.thickness != null ? String(v.thickness) : null);
-                              return variantThick === thick;
-                            })
-                          : product.variants.some((v) => {
-                              const variantSize = v.dim || v.size || v.name;
-                              const variantThick = v.thick != null ? String(v.thick) : (v.thickness != null ? String(v.thickness) : null);
-                              return variantThick === thick && variantSize === selectedSize;
-                            });
                         return (
                           <button
                             key={thick}
                             onClick={() => handleSelectThickness(thick)}
-                            disabled={!available}
-                            className={`px-4 py-2 rounded text-sm font-medium transition-all border ${
-                              selectedThickness === thick
-                                ? 'gradient-primary border-primary-500 text-white glow'
-                                : available
-                                ? 'border-white/15 text-white/60 hover:border-white/40 hover:text-white glass'
-                                : 'border-white/5 text-white/20 cursor-not-allowed line-through'
-                            }`}
+                            className={`px-4 py-2 rounded text-sm font-medium transition-all border ${selectedThickness === thick
+                              ? 'gradient-primary border-primary-500 text-white glow'
+                              : 'border-white/15 text-white/60 hover:border-white/40 hover:text-white glass'
+                              }`}
                           >
                             {thick}
                           </button>
@@ -666,11 +734,10 @@ export default function ProductDetailClient({ product }) {
                     <button
                       key={variant.id}
                       onClick={() => setSelectedVariant(variant)}
-                      className={`px-4 py-2.5 rounded text-sm font-medium transition-all border flex flex-col items-start ${
-                        selectedVariant?.id === variant.id
-                          ? 'gradient-primary border-primary-500 text-white glow'
-                          : 'border-white/15 text-white/60 hover:border-white/40 hover:text-white glass'
-                      }`}
+                      className={`px-4 py-2.5 rounded text-sm font-medium transition-all border flex flex-col items-start ${selectedVariant?.id === variant.id
+                        ? 'gradient-primary border-primary-500 text-white glow'
+                        : 'border-white/15 text-white/60 hover:border-white/40 hover:text-white glass'
+                        }`}
                     >
                       <span>{variant.name}</span>
                       <span className="text-xs opacity-70 mt-1">{formatPrice(variant.discountPrice || variant.price)}</span>
@@ -792,7 +859,7 @@ export default function ProductDetailClient({ product }) {
             {/* Custom Add-ons: Studs & Frames */}
             <div className="glass rounded p-4 space-y-4">
               <h3 className="font-semibold text-white text-sm border-b border-white/10 pb-2">Optional Add-ons</h3>
-              
+
               {/* Studs */}
               <label className="flex items-center gap-3 cursor-pointer group">
                 <div className={`w-5 h-5 shrink-0 rounded border flex items-center justify-center transition-colors ${hasStuds ? 'bg-primary-500 border-primary-500' : 'border-white/20 group-hover:border-white/40'}`}>
@@ -840,10 +907,11 @@ export default function ProductDetailClient({ product }) {
                       ))}
                       <Link
                         href="/frames"
+                        onClick={() => sessionStorage.setItem('frameReturnUrl', window.location.href)}
                         className="flex-shrink-0 snap-start w-20 h-20 rounded border-2 border-white/10 hover:border-white/30 border-dashed flex flex-col items-center justify-center gap-1 text-white/50 hover:text-white transition-all bg-white/5"
                       >
                         <span className="text-lg">🖼️</span>
-                        <span className="text-[10px] font-medium uppercase tracking-wider text-center leading-tight">View<br/>All 32</span>
+                        <span className="text-[10px] font-medium uppercase tracking-wider text-center leading-tight">View<br />All 32</span>
                       </Link>
                     </div>
                   </motion.div>
@@ -883,7 +951,7 @@ export default function ProductDetailClient({ product }) {
             </div>
           </motion.div>
         </div>
-        
+
         {/* ── Similar Products Section ─────────────────────────────── */}
         {product.similarProducts && product.similarProducts.length > 0 && (
           <div className="mt-24">
@@ -936,14 +1004,14 @@ export default function ProductDetailClient({ product }) {
                     <ambientLight intensity={0.5} />
                     <directionalLight position={[5, 5, 5]} intensity={1} castShadow />
                     <directionalLight position={[-5, 5, -5]} intensity={0.2} />
-                    
+
                     <Suspense fallback={null}>
                       {(previewDataUrl || product?.images?.[0]) && (
                         <ProductModel imageUrl={previewDataUrl || product.images[0]} />
                       )}
                     </Suspense>
-                    
-                    <OrbitControls 
+
+                    <OrbitControls
                       enablePan={false}
                       minDistance={4}
                       maxDistance={12}
@@ -951,7 +1019,7 @@ export default function ProductDetailClient({ product }) {
                       autoRotateSpeed={2}
                     />
                   </Canvas>
-                  
+
                   <div className="absolute bottom-6 left-1/2 -translate-x-1/2 glass px-4 py-2 rounded-full text-xs text-white/50 flex items-center gap-2">
                     <span>🖱️</span> Drag to rotate · Scroll to zoom
                   </div>
@@ -961,6 +1029,9 @@ export default function ProductDetailClient({ product }) {
           </motion.div>
         )}
       </AnimatePresence>
+      <div className="banner_img overflow-hidden position-relative h-300">
+        <img src="https://adoreprints.in/public/assets/img/b-1.png" alt="Transparent Framed Acrylic Photo" className="img-full" />
+      </div>
     </div>
   );
 }

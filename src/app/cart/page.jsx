@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import {
   HiOutlineShoppingCart,
   HiOutlineTrash,
+  HiOutlinePencilAlt,
   HiOutlineMinus,
   HiOutlinePlus,
   HiArrowLeft,
@@ -118,14 +119,46 @@ function CartItemCard({ item, onRemove, onUpdateQty }) {
         <div>
           <h3 className="font-semibold text-white text-sm leading-tight truncate pr-8">{item.name}</h3>
           <div className="flex flex-wrap gap-2 mt-1.5">
-            {item.size && (
+            {item.customData?.variant ? (
+              <>
+                {item.customData.variant.name && (
+                  <span className="px-2 py-0.5 rounded-lg bg-white/5 border border-white/10 text-white/50 text-xs">
+                    {item.customData.variant.name}
+                  </span>
+                )}
+                {(item.customData.variant.size || item.customData.variant.dim) && (
+                  <span className="px-2 py-0.5 rounded-lg bg-white/5 border border-white/10 text-white/50 text-xs">
+                    {item.customData.variant.size || item.customData.variant.dim}
+                  </span>
+                )}
+                {(item.customData.variant.thickness || item.customData.variant.thick) && (
+                  <span className="px-2 py-0.5 rounded-lg bg-white/5 border border-white/10 text-white/50 text-xs">
+                    {item.customData.variant.thickness || item.customData.variant.thick}
+                  </span>
+                )}
+              </>
+            ) : (
+              <>
+                {item.size && (
+                  <span className="px-2 py-0.5 rounded-lg bg-white/5 border border-white/10 text-white/50 text-xs">
+                    {item.size}
+                  </span>
+                )}
+                {item.thickness && (
+                  <span className="px-2 py-0.5 rounded-lg bg-white/5 border border-white/10 text-white/50 text-xs">
+                    {item.thickness}
+                  </span>
+                )}
+              </>
+            )}
+            {item.customData?.selectedFrame && (
               <span className="px-2 py-0.5 rounded-lg bg-white/5 border border-white/10 text-white/50 text-xs">
-                {item.size}
+                Frame: Premium Frame
               </span>
             )}
-            {item.thickness && (
-              <span className="px-2 py-0.5 rounded-lg bg-white/5 border border-white/10 text-white/50 text-xs">
-                {item.thickness}
+            {item.customData?.hasStuds && (
+              <span className="px-2 py-0.5 rounded-lg bg-white/5 border border-white/10 text-white/80 text-xs">
+                + Studs
               </span>
             )}
           </div>
@@ -158,9 +191,20 @@ function CartItemCard({ item, onRemove, onUpdateQty }) {
                 <p className="text-white/30 text-xs">{formatPrice(item.price)} each</p>
               )}
             </div>
+
+            {item.productSlug && (
+              <Link
+                href={`/products/${item.productSlug}?designId=${item.designId || ''}`}
+                className="p-2 rounded-xl text-white/30 hover:text-primary-400 hover:bg-primary-500/10 transition-all"
+                title="Edit item"
+              >
+                <HiOutlinePencilAlt className="w-4 h-4" />
+              </Link>
+            )}
+
             <button
               onClick={() => onRemove(item.key)}
-              className="p-2 rounded-xl text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100"
+              className="p-2 rounded-xl text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all"
               title="Remove item"
             >
               <HiOutlineTrash className="w-4 h-4" />
@@ -377,8 +421,8 @@ export default function CartPage() {
                     >
                       {couponLoading ? (
                         <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                         </svg>
                       ) : 'Apply'}
                     </button>

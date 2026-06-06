@@ -9,7 +9,14 @@ export async function GET(req) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    const categories = await prisma.category.findMany({ select: { id: true, name: true } });
+    const categories = await prisma.category.findMany({
+      select: {
+        id: true,
+        name: true,
+        subCategories: { select: { id: true, name: true } }
+      }
+    });
+
     const templates = await prisma.template.findMany({
       select: {
         id: true,

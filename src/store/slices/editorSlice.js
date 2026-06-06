@@ -90,6 +90,25 @@ const editorSlice = createSlice({
       state.historyIndex = -1;
       state.zoom = 1;
     },
+    scaleEditorState(state, action) {
+      const { scaleX, scaleY } = action.payload;
+      const scale = Math.min(scaleX, scaleY);
+      
+      // Scale image layers (photos)
+      state.layers.forEach((layer) => {
+        layer.x = layer.x * scaleX;
+        layer.y = layer.y * scaleY;
+        layer.scaleX = layer.scaleX * scale;
+        layer.scaleY = layer.scaleY * scale;
+      });
+
+      // Scale text layers
+      state.textLayers.forEach((layer) => {
+        layer.x = layer.x * scaleX;
+        layer.y = layer.y * scaleY;
+        layer.fontSize = layer.fontSize * scale;
+      });
+    },
     pushHistory(state, action) {
       // Trim redo history
       state.history = state.history.slice(0, state.historyIndex + 1);
@@ -142,7 +161,7 @@ export const selectExportQuality = (state) => state.editor.exportQuality;
 
 export const {
   setTemplate, setLayerImage, updateLayer, setSelectedLayer,
-  setStageRef, setZoom, resetEditor, pushHistory, undo, redo,
+  setStageRef, setZoom, resetEditor, scaleEditorState, pushHistory, undo, redo,
   addTextLayer, updateTextLayer, removeTextLayer, setBorderColor,
 } = editorSlice.actions;
 export default editorSlice.reducer;

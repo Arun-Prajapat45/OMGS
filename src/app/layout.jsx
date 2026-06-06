@@ -61,25 +61,25 @@ const roboto = Roboto({
 export const metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
   title: {
-    default: 'OMGS – Premium Custom Acrylic Photo Prints',
-    template: '%s | OMGS',
+    default: 'Adore – Premium Custom Acrylic Photo Prints',
+    template: '%s | Adore',
   },
   description:
     'Create stunning custom acrylic wall photos, clocks, hexagon frames and collages. Premium print quality, fast delivery. Design your memories today.',
   keywords: ['acrylic prints', 'custom photo gifts', 'wall decor', 'photo clock', 'hexagon frame', 'personalized gifts'],
-  authors: [{ name: 'OMGS' }],
+  authors: [{ name: 'Adore' }],
   openGraph: {
     type: 'website',
     locale: 'en_IN',
-    url: 'https://omgs.in',
-    siteName: 'OMGS',
-    title: 'OMGS – Premium Custom Acrylic Photo Prints',
+    url: 'https://Adoreprints.in',
+    siteName: 'Adore',
+    title: 'Adore – Premium Custom Acrylic Photo Prints',
     description: 'Create stunning custom acrylic wall photos, clocks, and frames.',
-    images: [{ url: '/og-image.jpg', width: 1200, height: 630, alt: 'OMGS Premium Prints' }],
+    images: [{ url: '/og-image.jpg', width: 1200, height: 630, alt: 'Adore Premium Prints' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'OMGS – Premium Custom Acrylic Photo Prints',
+    title: 'Adore – Premium Custom Acrylic Photo Prints',
     description: 'Create stunning custom acrylic wall photos, clocks, and frames.',
     images: ['/og-image.jpg'],
   },

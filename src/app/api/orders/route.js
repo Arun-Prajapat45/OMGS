@@ -36,12 +36,12 @@ export async function POST(req) {
     const total = subtotal - discount + deliveryFee;
     const orderNumber = generateOrderNumber();
 
-    // Create Razorpay order
-    const razorpayOrder = await createRazorpayOrder({
-      amount: total,
-      receipt: orderNumber,
-      notes: { userId: session.user.id, orderNumber },
-    });
+    // Bypass Razorpay order creation for now
+    // const razorpayOrder = await createRazorpayOrder({
+    //   amount: total,
+    //   receipt: orderNumber,
+    //   notes: { userId: session.user.id, orderNumber },
+    // });
 
     // Create pending order in DB
     const order = await prisma.order.create({
@@ -64,7 +64,10 @@ export async function POST(req) {
             size: item.size || null,
             thickness: item.thickness || null,
             price: item.price,
-            customData: item.customData || null,
+            customData: {
+              ...(item.customData || {}),
+              cartImage: item.image || null,
+            },
           })),
         },
       },
@@ -72,10 +75,10 @@ export async function POST(req) {
 
     return NextResponse.json({
       orderId: order.id,
-      razorpayOrderId: razorpayOrder.id,
-      amount: razorpayOrder.amount,
-      currency: razorpayOrder.currency,
-      keyId: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+      // razorpayOrderId: razorpayOrder.id,
+      // amount: razorpayOrder.amount,
+      // currency: razorpayOrder.currency,
+      // keyId: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
     });
   } catch (error) {
     console.error('Order creation error:', error);

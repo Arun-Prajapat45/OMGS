@@ -5,7 +5,7 @@ import TemplateBuilderClient from './TemplateBuilderClient';
 export async function generateMetadata({ params }) {
   const { id } = await params;
   return {
-    title: id === 'new' ? 'New Template — OMGS Builder' : 'Edit Template — OMGS Builder',
+    title: id === 'new' ? 'New Template — Adore Builder' : 'Edit Template — Adore Builder',
   };
 }
 

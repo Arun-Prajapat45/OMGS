@@ -104,22 +104,39 @@ export default function FramesPage() {
             <div className="relative w-full max-w-4xl bg-dark-900 rounded-3xl overflow-hidden border border-white/10 shadow-2xl flex flex-col h-[85vh]">
               {/* Header */}
               <div className="flex items-center justify-between p-4 border-b border-white/5 bg-black/20">
-                <div className="flex gap-2 p-1 glass rounded-xl">
+                <div className="flex items-center gap-4">
+                  <div className="flex gap-2 p-1 glass rounded-xl">
+                    <button
+                      onClick={() => setViewMode('2d')}
+                      className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                        viewMode === '2d' ? 'bg-primary-500 text-white shadow-md' : 'text-white/50 hover:text-white'
+                      }`}
+                    >
+                      2D View
+                    </button>
+                    <button
+                      onClick={() => setViewMode('3d')}
+                      className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                        viewMode === '3d' ? 'bg-primary-500 text-white shadow-md' : 'text-white/50 hover:text-white'
+                      }`}
+                    >
+                      3D View
+                    </button>
+                  </div>
                   <button
-                    onClick={() => setViewMode('2d')}
-                    className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                      viewMode === '2d' ? 'bg-primary-500 text-white shadow-md' : 'text-white/50 hover:text-white'
-                    }`}
+                    onClick={() => {
+                      sessionStorage.setItem('selectedFrame', selectedFrame);
+                      const returnUrl = sessionStorage.getItem('frameReturnUrl');
+                      if (returnUrl) {
+                        sessionStorage.removeItem('frameReturnUrl');
+                        window.location.href = returnUrl;
+                      } else {
+                        window.history.back();
+                      }
+                    }}
+                    className="px-4 py-1.5 rounded-lg text-sm font-medium transition-all bg-green-500 text-white shadow-md hover:bg-green-600"
                   >
-                    2D View
-                  </button>
-                  <button
-                    onClick={() => setViewMode('3d')}
-                    className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                      viewMode === '3d' ? 'bg-primary-500 text-white shadow-md' : 'text-white/50 hover:text-white'
-                    }`}
-                  >
-                    3D View
+                    Select Frame
                   </button>
                 </div>
                 <button

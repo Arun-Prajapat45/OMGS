@@ -36,45 +36,12 @@ const REVIEWS = [
     review: 'The baby birth frame for my sister was beyond beautiful. The acrylic print has such depth and the custom text was perfectly done. Fast delivery too!',
     product: 'Baby Birth Frame',
     gradient: 'from-pink-500 to-rose-600',
-  },
-  {
-    id: 4,
-    name: 'Karan Singh',
-    avatar: 'KS',
-    location: 'Pune',
-    rating: 5,
-    title: 'Mind-blowing acrylic quality',
-    review: 'The circle acrylic print on our living room wall gets compliments from every guest. The glossy finish and color accuracy are amazing. OMGS is my go-to for gifts.',
-    product: 'Circle Acrylic Print',
-    gradient: 'from-emerald-500 to-teal-600',
-  },
-  {
-    id: 5,
-    name: 'Meera Nair',
-    avatar: 'MN',
-    location: 'Chennai',
-    rating: 5,
-    title: 'Worth every rupee!',
-    review: 'I was skeptical at first but the triangle acrylic clock is absolutely gorgeous. The custom editor was intuitive and the final product matched the preview perfectly.',
-    product: 'Triangle Clock',
-    gradient: 'from-orange-500 to-amber-600',
-  },
-  {
-    id: 6,
-    name: 'Arjun Reddy',
-    avatar: 'AR',
-    location: 'Hyderabad',
-    rating: 5,
-    title: 'Incredibly fast delivery!',
-    review: 'Ordered on Monday, received on Wednesday. The acrylic wall photo looks stunning in our bedroom. The quality check warning saved me from uploading a low-res photo.',
-    product: 'Acrylic Wall Photo',
-    gradient: 'from-cyan-500 to-blue-600',
-  },
+  }
 ];
 
 export default function CustomerReviews() {
   return (
-    <section className="py-24 bg-dark-800/50 overflow-hidden">
+    <section className="py-12 bg-dark-800/50 overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

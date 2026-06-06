@@ -11,7 +11,7 @@ async function getProductBySlug(slug) {
       reviews: true,
     }
   });
-  
+
   if (!product) return null;
 
   // Fetch similar products in the same category
@@ -75,8 +75,8 @@ export async function generateMetadata({ params }) {
   const product = await getProductBySlug(slug);
   if (!product) return { title: 'Product Not Found' };
   return {
-    title: `${product.name} | OMGS`,
-    description: product.description || `Buy ${product.name} online at OMGS.`,
+    title: `${product.name} | Adore`,
+    description: product.description || `Buy ${product.name} online at Adore`,
   };
 }
 

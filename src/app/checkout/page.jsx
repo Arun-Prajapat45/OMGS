@@ -46,55 +46,20 @@ export default function CheckoutPage() {
       });
 
       if (!orderRes.ok) throw new Error('Order creation failed');
-      const { razorpayOrderId, amount, keyId, orderId } = await orderRes.json();
+      const { orderId } = await orderRes.json();
 
-      // Load Razorpay
-      await new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-        script.onload = resolve;
-        script.onerror = reject;
-        document.body.appendChild(script);
+      // Mock Payment - bypass Razorpay
+      const payRes = await fetch(`/api/orders/${orderId}/pay`, {
+        method: 'POST',
       });
 
-      const options = {
-        key: keyId,
-        amount,
-        currency: 'INR',
-        name: 'OMGS',
-        description: 'Premium Acrylic Photo Products',
-        order_id: razorpayOrderId,
-        handler: async (response) => {
-          // Verify payment
-          const verifyRes = await fetch('/api/payments/verify', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              razorpayOrderId: response.razorpay_order_id,
-              razorpayPaymentId: response.razorpay_payment_id,
-              razorpaySignature: response.razorpay_signature,
-              orderId,
-            }),
-          });
-
-          if (verifyRes.ok) {
-            await clearCart();
-            toast.success('Order placed successfully! 🎉');
-            router.push(`/orders/${orderId}?success=1`);
-          } else {
-            toast.error('Payment verification failed');
-          }
-        },
-        prefill: {
-          name: addressData.fullName,
-          email: addressData.email,
-          contact: addressData.phone,
-        },
-        theme: { color: '#6366f1' },
-      };
-
-      const rzp = new window.Razorpay(options);
-      rzp.open();
+      if (payRes.ok) {
+        await clearCart();
+        toast.success('Order placed successfully! 🎉');
+        router.push(`/orders/${orderId}?success=1`);
+      } else {
+        toast.error('Payment verification failed');
+      }
     } catch (error) {
       console.error(error);
       toast.error('Something went wrong. Please try again.');
@@ -187,7 +152,24 @@ export default function CheckoutPage() {
                   <div key={item.key} className="flex justify-between text-sm">
                     <div className="text-white/70">
                       <div className="font-medium text-white">{item.name}</div>
-                      <div className="text-white/40 text-xs">{item.size} • {item.thickness} × {item.quantity}</div>
+                      {item.customData?.variant ? (
+                        <div className="text-white/40 text-xs space-y-0.5">
+                          {item.customData.variant.name && <span>{item.customData.variant.name} • </span>}
+                          {(item.customData.variant.size || item.customData.variant.dim) && <span>Size: {item.customData.variant.size || item.customData.variant.dim} • </span>}
+                          {(item.customData.variant.thickness || item.customData.variant.thick) && <span>Thick: {item.customData.variant.thickness || item.customData.variant.thick} • </span>}
+                          {item.customData.selectedFrame && <span>Frame: Premium Frame • </span>}
+                          {item.customData.hasStuds && <span className="text-white/80">+ Studs • </span>}
+                          <span>Qty: {item.quantity}</span>
+                        </div>
+                      ) : (
+                        <div className="text-white/40 text-xs space-y-0.5">
+                          {item.size && <span>Size: {item.size} • </span>}
+                          {item.thickness && <span>Thick: {item.thickness} • </span>}
+                          {item.customData?.selectedFrame && <span>Frame: Premium Frame • </span>}
+                          {item.customData?.hasStuds && <span className="text-white/80">+ Studs • </span>}
+                          <span>Qty: {item.quantity}</span>
+                        </div>
+                      )}
                     </div>
                     <span className="text-white font-semibold">{formatPrice(item.price * item.quantity)}</span>
                   </div>

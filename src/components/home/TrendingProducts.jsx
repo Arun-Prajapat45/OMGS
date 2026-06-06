@@ -16,25 +16,19 @@ const categories = [
     id: 1,
     title: "Acrylic Wall Photo",
     image: heroAcrylic,
-    link: "/products/acrylic-wall-photo/"
+    link: "/products?category=acrylic-wall-photos"
   },
   {
     id: 2,
-    title: "Acrylic Wall Clocks",
+    title: "Acrylic Gifts & Specials",
     image: clockImage,
-    link: "/products/acrylic-wall-clocks/"
+    link: "/products?category=acrylic-gifts-and-specials"
   },
   {
     id: 3,
     title: "Acrylic Collage Photo",
     image: collageImage,
-    link: "/products/collage-acrylic-wall-photo/"
-  },
-  {
-    id: 4,
-    title: "Acrylic Desk Photo",
-    image: standImage,
-    link: "/products/acrylic-photo-stand/"
+    link: "/products?category=acrylic-collage-photo"
   }
 ];
 
@@ -57,7 +51,7 @@ export default function TrendingProducts() {
           </motion.div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {categories.map((cat, i) => (
             <motion.div
               key={cat.id}

@@ -48,9 +48,9 @@ export function useCart() {
 
   // ── Add to cart ─────────────────────────────────────────────────────────
   const handleAddToCart = useCallback(
-    async ({ productId, designId, size, thickness, quantity = 1, price, name, image, customData }) => {
+    async ({ productId, productSlug, designId, size, thickness, quantity = 1, price, name, image, customData }) => {
       // Optimistically update Redux
-      dispatch(addToCart({ productId, designId, size, thickness, quantity, price, name, image, customData }));
+      dispatch(addToCart({ productId, productSlug, designId, size, thickness, quantity, price, name, image, customData }));
 
       try {
         const res = await fetch('/api/cart', {

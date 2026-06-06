@@ -6,31 +6,24 @@ import Link from 'next/link';
 const slideData = [
   {
     id: 1,
-    title: "OMGS® Acrylic Wall Photo",
+    title: "Acrylic Wall Photo",
     desc: "Experience the brilliance and vibrancy of our acrylic prints, expertly crafted to bring your images to life. Create a captivating visual display that truly reflects your style and creates a lasting impression.",
-    video: "https://s.omgs.in/wp-content/uploads/2024/04/acrylic-name-plate.mp4",
-    link: "/products/acrylic-wall-photo/"
+    video: "https://s.omgs.in/wp-content/uploads/2025/03/omgs-landscape-2.mp4",
+    link: "/products?category=acrylic-wall-photos"
   },
   {
     id: 2,
-    title: "OMGS® Acrylic Wall Clock",
+    title: "Acrylic Gifts & Specials",
     desc: "Showcase your loved ones in a striking way with the OMGS® Clear Acrylic Photo, featuring a personalized, people-only design where the background is removed.",
-    video: "https://www.w3schools.com/html/mov_bbb.mp4",
-    link: "/products/acrylic-wall-clocks/"
+    video: "https://s.omgs.in/wp-content/uploads/2024/04/framed-acrylic-photo.mp4",
+    link: "/products?category=acrylic-gifts-and-specials"
   },
   {
     id: 3,
-    title: "OMGS® Acrylic Collage Photo",
+    title: "Acrylic Collage Photo",
     desc: "Experience timeless elegance with the OMGS® Acrylic Clock, where your personalized photo transforms a simple timepiece into a captivating decor statement.",
-    video: "https://s.omgs.in/wp-content/uploads/2024/04/acrylic-name-plate.mp4",
-    link: "/products/collage-acrylic-wall-photo/"
-  },
-  {
-    id: 4,
-    title: "OMGS® Arcylic Desk Photo",
-    desc: "Personalize your décor with the OMGS® Framed Acrylic Photo, expertly crafted to highlight your favorite memories with elegance and clarity.",
-    video: "https://www.w3schools.com/html/mov_bbb.mp4",
-    link: "/products/acrylic-photo-stand/"
+    video: "https://s.omgs.in/wp-content/uploads/2024/04/collage-acrylic-photos.mp4",
+    link: "/products?category=acrylic-collage-photo"
   }
 ];
 

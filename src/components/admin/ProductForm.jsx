@@ -16,6 +16,8 @@ const productSchema = z.object({
   description: z.string().optional(),
   categoryId: z.string().optional(),
   newCategoryName: z.string().optional(),
+  subCategoryId: z.string().optional(),
+  newSubCategoryName: z.string().optional(),
   templateId: z.string().min(1, 'Template is required'),
   shape: z.string().default('rectangle'),
   isActive: z.boolean().default(true),
@@ -48,15 +50,16 @@ const productSchema = z.object({
 
 const TABS = ['Basic', 'Variants', 'Media', 'Rules', 'SEO'];
 
-export default function ProductForm({ product, categories, templates, onCancel, onSuccess }) {
+export default function ProductForm({ product, categories, subCategories, templates, onCancel, onSuccess }) {
   const [activeTab, setActiveTab] = useState('Basic');
   const [uploading, setUploading] = useState(false);
   const [isNewCategory, setIsNewCategory] = useState(false);
+  const [isNewSubCategory, setIsNewSubCategory] = useState(false);
   const [triggerExport, setTriggerExport] = useState(false);
 
   const initialValues = {
     name: '', slug: '', sku: '', shortDescription: '', description: '',
-    categoryId: '', newCategoryName: '', templateId: '', shape: 'rectangle',
+    categoryId: '', newCategoryName: '', subCategoryId: '', templateId: '', shape: 'rectangle',
     isActive: true, isFeatured: false, isTrending: false,
     images: [], tags: '', variants: [],
     is3dEnabled: false,
@@ -73,6 +76,7 @@ export default function ProductForm({ product, categories, templates, onCancel, 
     if (!product) {
       reset(initialValues);
       setIsNewCategory(false);
+      setIsNewSubCategory(false);
       return;
     }
 
@@ -84,6 +88,8 @@ export default function ProductForm({ product, categories, templates, onCancel, 
       description: product.description ?? '',
       categoryId: product.categoryId ?? '',
       newCategoryName: '',
+      newSubCategoryName: '',
+      subCategoryId: product.subCategoryId ?? '',
       templateId: product.templateId ?? '',
       shape: product.shape ?? 'rectangle',
       isActive: product.isActive ?? true,
@@ -111,6 +117,7 @@ export default function ProductForm({ product, categories, templates, onCancel, 
       }
     });
     setIsNewCategory(false);
+    setIsNewSubCategory(false);
   }, [product, reset]);
 
   const { fields: variantFields, append: appendVariant, remove: removeVariant } = useFieldArray({ control, name: 'variants' });
@@ -281,6 +288,33 @@ export default function ProductForm({ product, categories, templates, onCancel, 
                 </div>
               )}
               {errors.categoryId && <p className="text-red-400 text-xs mt-1">{errors.categoryId.message}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm text-white/60 mb-1">SubCategory</label>
+              {isNewSubCategory ? (
+                <div className="flex gap-2">
+                  <input 
+                    {...register('newSubCategoryName')} 
+                    placeholder="Enter new subcategory name..." 
+                    className="flex-1 w-full bg-black/20 border border-white/10 rounded-lg p-2 text-white" 
+                  />
+                  <button type="button" onClick={() => { setIsNewSubCategory(false); setValue('newSubCategoryName', ''); }} className="px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white text-sm">Cancel</button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <select {...register('subCategoryId')} className="flex-1 w-full bg-black/20 border border-white/10 rounded-lg p-2 text-white [&>option]:bg-gray-900" disabled={isNewSubCategory || !watch('categoryId')}>
+                    <option value="">Select SubCategory</option>
+                    {categories.find(c => c.id === watch('categoryId'))?.subCategories?.map(sc => (
+                      <option key={sc.id} value={sc.id}>{sc.name}</option>
+                    ))}
+                  </select>
+                  <button type="button" onClick={() => { setIsNewSubCategory(true); setValue('subCategoryId', ''); }} className="px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white text-sm whitespace-nowrap">
+                    + New
+                  </button>
+                </div>
+              )}
+              {errors.subCategoryId && <p className="text-red-400 text-xs mt-1">{errors.subCategoryId.message}</p>}
             </div>
             
             <div className="md:col-span-2 p-4 border border-white/10 rounded-xl bg-white/5">

@@ -688,6 +688,38 @@ function SortBar({ total, sort, onSort, viewMode, onViewMode }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Subcategory filter pills
+// ─────────────────────────────────────────────────────────────────────────────
+function SubcategoryPills({ categorySlug, active, subCategories }) {
+  if (!subCategories || subCategories.length === 0) return null;
+  return (
+    <div className="flex gap-3 overflow-x-auto pb-3 mb-6 scrollbar-hide snap-x snap-mandatory">
+      <Link
+        href={`/products?category=${categorySlug}`}
+        className={`flex-shrink-0 snap-start inline-flex items-center gap-2 px-4 py-3 rounded-full text-sm font-semibold border transition-all duration-200 ${!active
+          ? 'bg-primary-600 border-primary-500 text-white shadow-xl shadow-primary-900/30'
+          : 'glass border-white/10 text-white/70 hover:text-white hover:border-white/20'
+          }`}
+      >
+        All
+      </Link>
+      {subCategories.map((sub) => (
+        <Link
+          key={sub.slug}
+          href={`/products?category=${categorySlug}&subcategory=${sub.slug}`}
+          className={`flex-shrink-0 snap-start inline-flex items-center gap-2 px-4 py-3 rounded-full text-sm font-semibold border transition-all duration-200 ${active === sub.slug
+            ? 'bg-primary-600 border-primary-500 text-white shadow-xl shadow-primary-900/30'
+            : 'glass border-white/10 text-white/70 hover:text-white hover:border-white/20'
+            }`}
+        >
+          {sub.name}
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Shape filter pills (quick horizontal scroll)
 // ─────────────────────────────────────────────────────────────────────────────
 const SHAPE_PILLS = [
@@ -811,7 +843,7 @@ function EmptyState({ onReset }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // ProductGrid — main export
 // ─────────────────────────────────────────────────────────────────────────────
-export default function ProductGrid({ searchParams, products = [] }) {
+export default function ProductGrid({ searchParams, products = [], subCategories = [], categorySlug }) {
   const [sort, setSort] = useState('featured');
   const [viewMode, setViewMode] = useState('grid');
   const [activeShape, setActiveShape] = useState(searchParams?.shape || 'all');
@@ -883,8 +915,12 @@ export default function ProductGrid({ searchParams, products = [] }) {
 
   return (
     <div>
-      {/* Quick shape pills */}
-      <ShapePills active={activeShape} onChange={setActiveShape} />
+      {/* Quick filters */}
+      {subCategories && subCategories.length > 0 ? (
+        <SubcategoryPills categorySlug={categorySlug} active={searchParams?.subcategory} subCategories={subCategories} />
+      ) : (
+        <ShapePills active={activeShape} onChange={setActiveShape} />
+      )}
 
       {/* Sort / view bar */}
       <SortBar

@@ -45,6 +45,7 @@ export async function GET(req) {
       thickness: item.thickness,
       customData: item.customData,
       name: item.product.name,
+      productSlug: item.product.slug,
       price: item.customData?.price || getProductFallbackPrice(item.product),
       image: item.customData?.image || (Array.isArray(item.product.images) ? item.product.images[0] : null),
     }));

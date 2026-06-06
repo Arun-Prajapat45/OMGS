@@ -16,12 +16,12 @@ import { selectCartCount } from '@/store/slices/cartSlice';
 import { selectWishlistItems } from '@/store/slices/wishlistSlice';
 import { useWishlist } from '@/hooks/useWishlist';
 import { cn } from '@/lib/utils';
-
+import logo from '@/assets/logo.png'
 const CATEGORIES = [
   {
     id: 'acrylic-wall-photo',
     label: 'Acrylic Wall Photos',
-    href: '/products?category=acrylic-wall-photo',
+    href: '/products?category=acrylic-wall-photos',
     // subcategories: [
     //   { label: 'Portrait Acrylic', href: '/products?category=acrylic-wall-photo&shape=portrait' },
     //   { label: 'Landscape Acrylic', href: '/products?category=acrylic-wall-photo&shape=landscape' },
@@ -33,7 +33,7 @@ const CATEGORIES = [
   {
     id: 'collage-frame',
     label: 'Collage Frames',
-    href: '/products?category=collage-frame',
+    href: '/products?category=acrylic-collage-photo',
     // icon: '🎨',
     // subcategories: [
     //   { label: '2 Photo Collage', href: '/products?category=collage-frame&count=2' },
@@ -45,7 +45,7 @@ const CATEGORIES = [
   {
     id: 'gifts',
     label: 'Gifts & Special',
-    href: '/products?category=gifts',
+    href: '/products?category=acrylic-gifts-and-specials',
     // icon: '🎁',
     // subcategories: [
     //   { label: 'Couple Heart Frame', href: '/products?category=couple-gift' },
@@ -115,12 +115,20 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 flex-shrink-0">
-            <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center glow">
-              <span className="text-white font-bold text-xl">O</span>
+          <Link href="/" className="flex items-center flex-shrink-0">
+            <div className="w-12 h-12 flex items-center justify-center">
+              <Image
+                src={logo}
+                alt="Adore Prints Logo"
+                width={50}
+                height={50}
+                className="object-contain"
+                priority
+              />
             </div>
-            <span className="text-white font-display font-bold text-2xl tracking-tight hidden sm:block">
-              OMG<span className="text-gradient-primary">S</span>
+            <span className="font-display font-bold text-2xl tracking-tight hidden sm:block">
+              <span className="text-gradient-primary">dore</span>
+              <span className="text-white ml-1">Prints</span>
             </span>
           </Link>
 
@@ -179,7 +187,7 @@ export default function Navbar() {
           {/* Right Actions */}
           <div className="flex items-center gap-3">
             {/* Search */}
-            
+
 
             <button
               onClick={toggleTheme}
@@ -297,20 +305,7 @@ export default function Navbar() {
                     <span className="text-xl">{cat.icon}</span>
                     {cat.label}
                   </Link>
-                  {cat.subcategories && cat.subcategories.length > 0 && (
-                    <div className="pl-12 space-y-1">
-                      {cat.subcategories.map((sub) => (
-                        <Link
-                          key={sub.href}
-                          href={sub.href}
-                          onClick={() => setMobileMenuOpen(false)}
-                          className="block px-3 py-2 text-sm text-white/60 hover:text-white hover:bg-white/5 rounded-lg transition-all"
-                        >
-                          {sub.label}
-                        </Link>
-                      ))}
-                    </div>
-                  )}
+
                 </div>
               ))}
               <Link

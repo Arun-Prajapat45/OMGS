@@ -2,7 +2,7 @@ import ProductGrid from '@/components/products/ProductGrid';
 import { prisma } from '@/lib/prisma';
 
 export const metadata = {
-  title: 'All Products | OMGS',
+  title: 'All Products | Adore',
   description: 'Browse our full collection of premium acrylic photo prints, clocks, and custom wall art.',
 };
 
@@ -28,35 +28,68 @@ function serializeProduct(p) {
     variants: Array.isArray(p.variants) ? p.variants.map(normalizeVariant) : [],
     is3dEnabled: p.is3dEnabled ?? false,
     threeDModelUrl: p.threeDModelUrl ?? null,
-    createdAt:     p.createdAt?.toISOString?.() ?? p.createdAt,
-    updatedAt:     p.updatedAt?.toISOString?.() ?? p.updatedAt,
-    images:        Array.isArray(p.images) ? p.images : (p.images ?? []),
-    tags:          Array.isArray(p.tags) ? p.tags : (p.tags ?? []),
-    features:      Array.isArray(p.features) ? p.features : (p.features ?? []),
+    createdAt: p.createdAt?.toISOString?.() ?? p.createdAt,
+    updatedAt: p.updatedAt?.toISOString?.() ?? p.updatedAt,
+    images: Array.isArray(p.images) ? p.images : (p.images ?? []),
+    tags: Array.isArray(p.tags) ? p.tags : (p.tags ?? []),
+    features: Array.isArray(p.features) ? p.features : (p.features ?? []),
     category: p.category
       ? {
-          ...p.category,
-          createdAt: p.category.createdAt?.toISOString?.() ?? p.category.createdAt,
-          updatedAt: p.category.updatedAt?.toISOString?.() ?? p.category.updatedAt,
-        }
+        ...p.category,
+        createdAt: p.category.createdAt?.toISOString?.() ?? p.category.createdAt,
+        updatedAt: p.category.updatedAt?.toISOString?.() ?? p.category.updatedAt,
+      }
+      : null,
+    subCategory: p.subCategory
+      ? {
+        ...p.subCategory,
+        createdAt: p.subCategory.createdAt?.toISOString?.() ?? p.subCategory.createdAt,
+        updatedAt: p.subCategory.updatedAt?.toISOString?.() ?? p.subCategory.updatedAt,
+      }
       : null,
     template: p.template
       ? {
-          ...p.template,
-          createdAt: p.template.createdAt?.toISOString?.() ?? p.template.createdAt,
-          updatedAt: p.template.updatedAt?.toISOString?.() ?? p.template.updatedAt,
-        }
+        ...p.template,
+        createdAt: p.template.createdAt?.toISOString?.() ?? p.template.createdAt,
+        updatedAt: p.template.updatedAt?.toISOString?.() ?? p.template.updatedAt,
+      }
       : null,
   };
 }
 
 export default async function ProductsPage({ searchParams }) {
+  const sp = await searchParams;
+  const categorySlug = sp?.category;
+  const subcategorySlug = sp?.subcategory;
+
+  const where = { isActive: true };
+  if (categorySlug) {
+    where.category = { slug: categorySlug };
+  }
+  if (subcategorySlug) {
+    where.subCategory = { slug: subcategorySlug };
+  }
+
+  let subCategories = [];
+  let categoryName = 'All Products';
+  if (categorySlug) {
+    const category = await prisma.category.findUnique({
+      where: { slug: categorySlug },
+      include: { subCategories: true }
+    });
+    if (category) {
+      subCategories = category.subCategories;
+      categoryName = category.name;
+    }
+  }
+
   const raw = await prisma.product.findMany({
-    where: { isActive: true },
+    where,
     include: {
       category: true,
+      subCategory: true,
       template: true,
-      reviews:  { select: { rating: true } },
+      reviews: { select: { rating: true } },
     },
     orderBy: { createdAt: 'desc' },
   });
@@ -69,7 +102,7 @@ export default async function ProductsPage({ searchParams }) {
         {/* Page Header */}
         <div className="mb-8">
           <h1 className="font-display text-4xl font-bold text-white mb-2">
-            All Products
+            {categoryName}
           </h1>
           <p className="text-white/50">
             Discover our premium acrylic photo products
@@ -77,7 +110,7 @@ export default async function ProductsPage({ searchParams }) {
         </div>
 
         <div className="flex flex-col gap-8">
-          <ProductGrid searchParams={searchParams} products={products} />
+          <ProductGrid searchParams={sp} products={products} subCategories={subCategories} categorySlug={categorySlug} />
         </div>
       </div>
     </div>

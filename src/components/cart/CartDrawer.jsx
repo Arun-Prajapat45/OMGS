@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
 import Link from 'next/link';
 import Image from 'next/image';
-import { HiX, HiOutlineMinus, HiOutlinePlus, HiOutlineTrash, HiOutlineShoppingBag, HiOutlineExternalLink } from 'react-icons/hi';
+import { HiX, HiOutlineMinus, HiOutlinePlus, HiOutlineTrash, HiOutlineShoppingBag, HiOutlineExternalLink, HiOutlinePencilAlt } from 'react-icons/hi';
 import { toggleCart } from '@/store/slices/uiSlice';
 import { selectCartItems, selectCartSubtotal, selectCartTotal } from '@/store/slices/cartSlice';
 import { useCart } from '@/hooks/useCart';
@@ -95,8 +95,22 @@ export default function CartDrawer() {
 
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-sm text-white truncate">{item.name}</h3>
-                        {item.size && <p className="text-xs text-white/50 mt-0.5">Size: {item.size}</p>}
-                        {item.thickness && <p className="text-xs text-white/50">Thickness: {item.thickness}</p>}
+                        {item.customData?.variant ? (
+                          <div className="text-xs text-white/50 mt-0.5 space-y-0.5">
+                            {item.customData.variant.name && <p>Option: {item.customData.variant.name}</p>}
+                            {(item.customData.variant.size || item.customData.variant.dim) && <p>Size: {item.customData.variant.size || item.customData.variant.dim}</p>}
+                            {(item.customData.variant.thickness || item.customData.variant.thick) && <p>Thickness: {item.customData.variant.thickness || item.customData.variant.thick}</p>}
+                            {item.customData.selectedFrame && <p>Frame: Premium Frame</p>}
+                            {item.customData.hasStuds && <p className="text-white/80">+ Studs</p>}
+                          </div>
+                        ) : (
+                          <div className="text-xs text-white/50 mt-0.5 space-y-0.5">
+                            {item.size && <p>Size: {item.size}</p>}
+                            {item.thickness && <p>Thickness: {item.thickness}</p>}
+                            {item.customData?.selectedFrame && <p>Frame: Premium Frame</p>}
+                            {item.customData?.hasStuds && <p className="text-white/80">+ Studs</p>}
+                          </div>
+                        )}
                         <div className="flex items-center justify-between mt-3">
                           <div className="flex items-center gap-2">
                             <button
@@ -115,11 +129,21 @@ export default function CartDrawer() {
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="font-bold text-white">{formatPrice(item.price * item.quantity)}</span>
+                            {item.productSlug && (
+                              <Link
+                                href={`/products/${item.productSlug}?designId=${item.designId || ''}`}
+                                onClick={() => dispatch(toggleCart())}
+                                className="p-1.5 rounded-lg text-white/50 hover:text-primary-400 hover:bg-primary-500/10 transition-all"
+                                title="Edit item"
+                              >
+                                <HiOutlinePencilAlt className="w-6 h-6" />
+                              </Link>
+                            )}
                             <button
                               onClick={() => removeFromCart(item.key)}
-                              className="p-1.5 rounded-lg text-red-400 hover:bg-red-500/10 transition-all"
+                              className="p-1.5 rounded-lg text-red-400 bg-red-500/10 transition-all"
                             >
-                              <HiOutlineTrash className="w-4 h-4" />
+                              <HiOutlineTrash className="w-6 h-6" />
                             </button>
                           </div>
                         </div>
