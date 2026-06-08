@@ -90,9 +90,7 @@ export async function generateMetadata({ params }) {
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
-export async function generateStaticParams() {
-  return [];
-}
+
 
 export default async function ProductDetailPage({ params }) {
   const { slug } = await params;
