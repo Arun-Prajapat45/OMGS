@@ -22,13 +22,13 @@ const CHECKER = 'repeating-conic-gradient(#1a1b2e 0% 25%, #13141f 0% 50%) 0 0 / 
  */
 function BuilderElement({ el, isSelected, isDraggable, previewMode, nodeRefs, onDragEnd, onTransformEnd, onClick }) {
   // Load admin preview image for photo slots — null for all other element types
-  const previewUrl = el.type === 'image-placeholder' ? (el.adminPreviewImageUrl || '') : '';
+  const previewUrl = (el.type === 'image-placeholder' || el.type === 'text-mask') ? (el.adminPreviewImageUrl || '') : '';
   const [adminPreviewImg] = useImage(previewUrl, 'anonymous');
 
   // Pass the loaded image as userImage so ElementRenderer renders it with effects.
   // ElementRenderer also does its own useImage(adminPreviewImageUrl) internally,
   // but having it here ensures the outer Group re-renders when the image loads.
-  const userImage = el.type === 'image-placeholder' ? adminPreviewImg : null;
+  const userImage = (el.type === 'image-placeholder' || el.type === 'text-mask') ? adminPreviewImg : null;
 
   return (
     <Group

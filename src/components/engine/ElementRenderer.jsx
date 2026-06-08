@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { Group, Rect, Image, Text, Circle, RegularPolygon, Shape, Transformer } from 'react-konva';
+import { Group, Rect, Image, Text, Circle, RegularPolygon, Shape, Transformer, Path } from 'react-konva';
 import useImage from 'use-image';
 
 // ─── Clip functions for all mask shapes ────────────────────────────────────────
@@ -120,14 +120,9 @@ function buildClipFunc(mask, width, height) {
         break;
       }
       case 'svg': {
-        // Draw SVG path data on canvas path
-        const path = mask?.svgPath;
-        if (path) {
-          const p = new Path2D(path);
-          ctx.addPath(p);
-        } else {
-          ctx.rect(0, 0, width, height);
-        }
+        // SVG paths are handled via Path components with destination-in
+        // rather than clipFunc, so just draw a rect fallback here
+        ctx.rect(0, 0, width, height);
         break;
       }
       default:
@@ -788,23 +783,16 @@ function TextElement({ element, onClick, offsetX = 0, offsetY = 0 }) {
 }
 
 // ─── Text-Mask Element ─────────────────────────────────────────────────────────
-// Image renders INSIDE the text shape using globalCompositeOperation: destination-in
+// Image renders INSIDE the text shape using fillPatternImage
 function TextMaskElement({ element, userImage, isAdminMode, onClick, offsetX = 0, offsetY = 0 }) {
-  const groupRef = useRef(null);
-
-  useEffect(() => {
-    // Force Konva to buffer this group so compositing works correctly
-    if (groupRef.current) {
-      groupRef.current.cache();
-      groupRef.current.getLayer()?.batchDraw();
-    }
-  }, [element.text, element.fontFamily, element.fontSize, element.width, element.height, userImage]);
-
-  const fontStr = `${element.fontStyle === 'bold' ? 'bold ' : ''}${element.fontSize || 400}px "${element.fontFamily || 'Montserrat'}"`;
+  const crop = element.crop || { cropX: 0, cropY: 0, cropScale: 1 };
+  
+  const imgProps = userImage
+    ? coverFit(userImage.width, userImage.height, element.width, element.height, crop.cropX, crop.cropY, crop.cropScale)
+    : null;
 
   return (
     <Group
-      ref={groupRef}
       x={offsetX}
       y={offsetY}
       rotation={element.rotation || 0}
@@ -814,49 +802,45 @@ function TextMaskElement({ element, userImage, isAdminMode, onClick, offsetX = 0
       width={element.width}
       height={element.height}
     >
-      {/* Base: user photo or placeholder */}
-      {userImage ? (
-        <Image
-          image={userImage}
-          x={0} y={0}
-          width={element.width}
-          height={element.height}
-        />
-      ) : (
-        <Rect
-          x={0} y={0}
-          width={element.width}
-          height={element.height}
-          fill={isAdminMode ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.1)'}
-        />
-      )}
-      {/* Text mask — clips the image above to the text shape via destination-in */}
-      <Shape
-        globalCompositeOperation="destination-in"
-        sceneFunc={(ctx) => {
-          ctx.font = fontStr;
-          ctx.fillStyle = 'white';
-          ctx.textBaseline = 'top';
-          ctx.fillText(element.text || 'M', 0, 0);
-        }}
+      <Text
+        x={0} y={0}
         width={element.width}
         height={element.height}
-        fill="white"
+        text={element.text || 'M'}
+        fontFamily={element.fontFamily || 'Montserrat'}
+        fontSize={element.fontSize || 400}
+        fontStyle={element.fontStyle || 'normal'}
+        letterSpacing={element.letterSpacing || 0}
+        
+        fill={!userImage ? (element.fill || (isAdminMode ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.1)')) : undefined}
+        
+        fillPatternImage={userImage || undefined}
+        fillPatternX={imgProps ? imgProps.x : 0}
+        fillPatternY={imgProps ? imgProps.y : 0}
+        fillPatternScaleX={userImage ? imgProps.width / userImage.width : 1}
+        fillPatternScaleY={userImage ? imgProps.height / userImage.height : 1}
+        fillPatternRepeat="no-repeat"
+        
+        align="left"
+        verticalAlign="top"
         listening={false}
       />
+      
       {/* Admin: outline the text for visibility */}
       {isAdminMode && (
-        <Shape
-          sceneFunc={(ctx, shape) => {
-            ctx.font = fontStr;
-            ctx.strokeStyle = 'rgba(99,102,241,0.6)';
-            ctx.lineWidth = 2;
-            ctx.textBaseline = 'top';
-            ctx.strokeText(element.text || 'M', 0, 0);
-            ctx.fillStrokeShape(shape);
-          }}
+        <Text
+          x={0} y={0}
           width={element.width}
           height={element.height}
+          text={element.text || 'M'}
+          fontFamily={element.fontFamily || 'Montserrat'}
+          fontSize={element.fontSize || 400}
+          fontStyle={element.fontStyle || 'normal'}
+          letterSpacing={element.letterSpacing || 0}
+          stroke="rgba(99,102,241,0.6)"
+          strokeWidth={2}
+          align="left"
+          verticalAlign="top"
           listening={false}
         />
       )}
@@ -902,24 +886,29 @@ function ShapeElement({ element, onClick, offsetX = 0, offsetY = 0 }) {
 
 // ─── SVG Mask Element ──────────────────────────────────────────────────────────
 function SvgMaskElement({ element, userImage, onClick, offsetX = 0, offsetY = 0 }) {
+  const groupRef = useRef(null);
+
+  useEffect(() => {
+    if (groupRef.current) {
+      groupRef.current.clearCache();
+      groupRef.current.cache();
+      groupRef.current.getLayer()?.batchDraw();
+    }
+  }, [element.svgPath, element.width, element.height, userImage]);
+
   return (
     <Group
+      ref={groupRef}
       x={offsetX}
       y={offsetY}
       rotation={element.rotation || 0}
       opacity={element.opacity ?? 1}
-      clipFunc={(ctx) => {
-        if (element.svgPath) {
-          const p = new Path2D(element.svgPath);
-          ctx.addPath(p);
-        } else {
-          ctx.rect(0, 0, element.width, element.height);
-        }
-        ctx.closePath();
-      }}
       onClick={onClick}
       onTap={onClick}
+      width={element.width}
+      height={element.height}
     >
+      {/* Base: user photo or placeholder */}
       {userImage ? (
         <Image image={userImage} x={0} y={0} width={element.width} height={element.height} />
       ) : (
@@ -928,10 +917,24 @@ function SvgMaskElement({ element, userImage, onClick, offsetX = 0, offsetY = 0 
           width={element.width}
           height={element.height}
           fill="rgba(99,102,241,0.3)"
+        />
+      )}
+      
+      {/* SVG Mask clips the image via destination-in */}
+      <Path
+        data={element.svgPath || ''}
+        fill="white"
+        globalCompositeOperation="destination-in"
+        listening={false}
+      />
+
+      {/* Admin outline */}
+      {!userImage && (
+        <Path
+          data={element.svgPath || ''}
           stroke="rgba(99,102,241,0.6)"
           strokeWidth={2}
-          dash={[8, 4]}
-          strokeScaleEnabled={false}
+          listening={false}
         />
       )}
     </Group>

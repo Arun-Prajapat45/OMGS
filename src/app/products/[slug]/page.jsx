@@ -80,12 +80,18 @@ export async function generateMetadata({ params }) {
   };
 }
 
+// export async function generateStaticParams() {
+//   const products = await prisma.product.findMany({
+//     select: { slug: true },
+//     where: { isActive: true },
+//   });
+//   return products.map((p) => ({ slug: p.slug }));
+// }
+
+export const dynamic = "force-dynamic";
+
 export async function generateStaticParams() {
-  const products = await prisma.product.findMany({
-    select: { slug: true },
-    where: { isActive: true },
-  });
-  return products.map((p) => ({ slug: p.slug }));
+  return [];
 }
 
 export default async function ProductDetailPage({ params }) {

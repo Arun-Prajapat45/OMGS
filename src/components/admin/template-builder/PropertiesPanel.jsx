@@ -1,7 +1,7 @@
 'use client';
 
 import { useDispatch, useSelector } from 'react-redux';
-import { useRef, useCallback } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import {
   selectSelectedElement, selectCanvas,
   updateElement, setCanvas, bringForward, sendBackward,
@@ -11,8 +11,9 @@ import {
 import AssetUploader from './AssetUploader';
 import {
   HiTrash, HiDuplicate, HiEye, HiEyeOff, HiLockClosed, HiLockOpen,
-  HiChevronUp, HiChevronDown,
+  HiChevronUp, HiChevronDown, HiEmojiHappy
 } from 'react-icons/hi';
+import EmojiPicker from 'emoji-picker-react';
 
 const BLEND_MODES = [
   'source-over', 'multiply', 'screen', 'overlay',
@@ -21,18 +22,18 @@ const BLEND_MODES = [
 ];
 
 const MASK_TYPES = [
-  { value: 'rectangle',         label: '⬜  Rectangle' },
+  { value: 'rectangle', label: '⬜  Rectangle' },
   { value: 'rounded_rectangle', label: '▢  Rounded Rectangle' },
-  { value: 'circle',            label: '⭕  Circle' },
-  { value: 'oval',              label: '🟠  Oval' },
-  { value: 'hexagon',           label: '⬡  Hexagon' },
-  { value: 'triangle',          label: '🔺  Triangle' },
-  { value: 'diamond',           label: '♦  Diamond' },
-  { value: 'star',              label: '⭐  Star' },
-  { value: 'heart',             label: '❤️  Heart' },
-  { value: 'egg',               label: '🥚  Egg' },
-  { value: 'cloud',             label: '☁️  Cloud' },
-  { value: 'svg',               label: '🖊  Custom SVG' },
+  { value: 'circle', label: '⭕  Circle' },
+  { value: 'oval', label: '🟠  Oval' },
+  { value: 'hexagon', label: '⬡  Hexagon' },
+  { value: 'triangle', label: '🔺  Triangle' },
+  { value: 'diamond', label: '♦  Diamond' },
+  { value: 'star', label: '⭐  Star' },
+  { value: 'heart', label: '❤️  Heart' },
+  { value: 'egg', label: '🥚  Egg' },
+  { value: 'cloud', label: '☁️  Cloud' },
+  { value: 'svg', label: '🖊  Custom SVG' },
 ];
 
 const FONT_FAMILIES = [
@@ -129,13 +130,13 @@ function Divider({ title }) {
 // ─── Section renderers per element type ────────────────────────────────────────
 
 const FEATHER_TYPES = [
-  { value: 'none',          label: '— None' },
-  { value: 'radial',        label: '◎ Radial Fade' },
-  { value: 'vignette',      label: '◼ Vignette' },
-  { value: 'linear-top',    label: '↑ Linear (Top)' },
+  { value: 'none', label: '— None' },
+  { value: 'radial', label: '◎ Radial Fade' },
+  { value: 'vignette', label: '◼ Vignette' },
+  { value: 'linear-top', label: '↑ Linear (Top)' },
   { value: 'linear-bottom', label: '↓ Linear (Bottom)' },
-  { value: 'linear-left',   label: '← Linear (Left)' },
-  { value: 'linear-right',  label: '→ Linear (Right)' },
+  { value: 'linear-left', label: '← Linear (Left)' },
+  { value: 'linear-right', label: '→ Linear (Right)' },
 ];
 
 const PHOTO_BLEND_MODES = [
@@ -146,11 +147,10 @@ const PHOTO_BLEND_MODES = [
 
 function SectionToggle({ label, icon, enabled, onToggle, children }) {
   return (
-    <div className={`rounded-xl border transition-all duration-200 overflow-hidden ${
-      enabled
-        ? 'border-indigo-500/40 bg-indigo-500/5'
-        : 'border-white/8 bg-white/2'
-    }`}>
+    <div className={`rounded-xl border transition-all duration-200 overflow-hidden ${enabled
+      ? 'border-indigo-500/40 bg-indigo-500/5'
+      : 'border-white/8 bg-white/2'
+      }`}>
       <button
         onClick={onToggle}
         className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-white/5 transition-colors"
@@ -326,7 +326,7 @@ function ImagePlaceholderProps({ el, update }) {
               onChange={(e) => updateFx({ warmth: parseInt(e.target.value) })}
               className="flex-1 h-1.5 rounded-full appearance-none cursor-pointer"
               style={{
-                background: `linear-gradient(to right, #38bdf8, #93c5fd ${Math.max(0,(fx.warmth ?? 0) + 100) / 2}%, #f97316 ${Math.min(100,(fx.warmth ?? 0) + 100) / 2 + 50}%, #fb923c)`,
+                background: `linear-gradient(to right, #38bdf8, #93c5fd ${Math.max(0, (fx.warmth ?? 0) + 100) / 2}%, #f97316 ${Math.min(100, (fx.warmth ?? 0) + 100) / 2 + 50}%, #fb923c)`,
                 WebkitAppearance: 'none',
               }}
             />
@@ -507,16 +507,42 @@ function TextMaskProps({ el, update }) {
   return (
     <>
       <Divider title="Typography Mask" />
-      <Field label="Text (letter/word)">
-        <TextInput value={el.text} onChange={(v) => update({ text: v })} placeholder="M" />
+      <div className="rounded-lg bg-pink-500/10 border border-pink-500/20 px-3 py-2 mb-2">
+        <p className="text-[10px] text-pink-300/80 leading-relaxed">
+          <span className="font-semibold text-pink-300">Typography Mask:</span> Uploaded photos will be clipped INSIDE the text shape.
+        </p>
+      </div>
+
+      <Field label="Text (word/phrase)">
+        <TextInput value={el.text} onChange={(v) => update({ text: v })} placeholder="MOM" />
       </Field>
-      <Field label="Font Family">
-        <SelectInput value={el.fontFamily} onChange={(v) => update({ fontFamily: v })} options={FONT_FAMILIES} />
-      </Field>
-      <Field label="Font Size">
-        <NumberInput value={el.fontSize} onChange={(v) => update({ fontSize: v })} min={50} max={1200} />
-      </Field>
-      <Field label="Font Style">
+      <div className="grid grid-cols-2 gap-2 mt-2">
+        <Field label="Font Family">
+          <SelectInput value={el.fontFamily} onChange={(v) => update({ fontFamily: v })} options={FONT_FAMILIES} />
+        </Field>
+        <Field label="Font Size">
+          <NumberInput value={el.fontSize} onChange={(v) => update({ fontSize: v })} min={50} max={1200} />
+        </Field>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 mt-2">
+        <Field label="Letter Spacing">
+          <NumberInput value={el.letterSpacing || 0} onChange={(v) => update({ letterSpacing: v })} min={-20} max={100} />
+        </Field>
+        <Field label="Text Color (Fallback)">
+          <div className="flex items-center gap-2">
+            <input
+              type="color"
+              value={el.fill || '#ffffff'}
+              onChange={(e) => update({ fill: e.target.value })}
+              className="w-6 h-6 rounded cursor-pointer border-0 p-0 bg-transparent"
+            />
+            <span className="text-xs text-white/70 font-mono uppercase">{el.fill || '#ffffff'}</span>
+          </div>
+        </Field>
+      </div>
+
+      <Field label="Font Style" className="mt-2">
         <div className="flex gap-1.5">
           {['normal', 'bold', 'italic'].map((s) => (
             <button key={s} onClick={() => update({ fontStyle: s })}
@@ -526,22 +552,90 @@ function TextMaskProps({ el, update }) {
           ))}
         </div>
       </Field>
-      <Field label="Upload Slot #">
-        <NumberInput value={el.uploadSlot} onChange={(v) => update({ uploadSlot: v })} min={1} />
+
+      <Divider title="Photo Upload & Position" />
+      <div className="grid grid-cols-2 gap-2 mb-2">
+        <Field label="Upload Slot #">
+          <NumberInput value={el.uploadSlot} onChange={(v) => update({ uploadSlot: v })} min={1} />
+        </Field>
+      </div>
+
+      <Field label="Admin Test Photo">
+        <AssetUploader
+          currentUrl={el.adminPreviewImageUrl}
+          label="Upload Test Photo"
+          onUploaded={(url) => update({ adminPreviewImageUrl: url })}
+        />
       </Field>
+
+      <div className="grid grid-cols-3 gap-2 mt-3">
+        <Field label="Crop X">
+          <NumberInput value={el.crop?.cropX} onChange={(v) => update({ crop: { ...el.crop, cropX: v } })} step={1} />
+        </Field>
+        <Field label="Crop Y">
+          <NumberInput value={el.crop?.cropY} onChange={(v) => update({ crop: { ...el.crop, cropY: v } })} step={1} />
+        </Field>
+        <Field label="Scale">
+          <NumberInput value={el.crop?.cropScale} onChange={(v) => update({ crop: { ...el.crop, cropScale: v } })} step={0.1} min={0.1} />
+        </Field>
+      </div>
     </>
   );
 }
 
 function ImageAssetProps({ el, update, label = 'Overlay Image' }) {
   const isOverlay = el.type === 'overlay';
+  const isSticker = el.type === 'sticker';
   // Default centerOpacity to 1 (no hole) if not set
   const centerOpacity = typeof el.centerOpacity === 'number' ? el.centerOpacity : 1;
   const hasCenterHole = centerOpacity < 1;
 
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+
+  const handleEmojiClick = (emojiObj) => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><text x="50%" y="50%" dominant-baseline="central" text-anchor="middle" font-size="80">${emojiObj.emoji}</text></svg>`;
+    const dataUrl = `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+    update({ src: dataUrl });
+    setShowEmojiPicker(false);
+  };
+
   return (
     <>
       <Divider title={label} />
+
+      {isSticker && (
+        <div className="mb-4 space-y-2">
+          <Field label="Choose Emoji Sticker">
+            <button
+              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+              className="w-full flex items-center justify-center gap-2 bg-black/30 border border-white/10 hover:border-indigo-500/50 rounded-lg py-2 text-white/80 transition-colors text-sm"
+            >
+              <HiEmojiHappy className="w-5 h-5 text-amber-400" />
+              {showEmojiPicker ? 'Close Emoji Picker' : 'Open Emoji Picker'}
+            </button>
+          </Field>
+
+          {showEmojiPicker && (
+            <div className="mt-2 border border-white/10 rounded-xl overflow-hidden shadow-2xl">
+              <EmojiPicker
+                onEmojiClick={handleEmojiClick}
+                theme="dark"
+                width="100%"
+                height={300}
+                searchPlaceholder="Search emojis..."
+                lazyLoadEmojis={true}
+              />
+            </div>
+          )}
+
+          <div className="relative flex py-2 items-center">
+            <div className="flex-grow border-t border-white/10"></div>
+            <span className="flex-shrink-0 mx-4 text-white/30 text-[10px] uppercase tracking-wider font-semibold">Or</span>
+            <div className="flex-grow border-t border-white/10"></div>
+          </div>
+        </div>
+      )}
+
       <Field label="Asset File (PNG/WebP/SVG)">
         <AssetUploader
           currentUrl={el.src}
@@ -569,15 +663,15 @@ function ImageAssetProps({ el, update, label = 'Overlay Image' }) {
               step={0.01}
             />
           </Field>
-          
+
           {/* Only show shape/size if there's actually a hole (opacity < 1) */}
           {hasCenterHole && (
             <>
               <div className="grid grid-cols-2 gap-2 mt-2">
                 <Field label="Hole Shape">
-                  <SelectInput 
-                    value={el.holeShape || 'radial'} 
-                    onChange={(v) => update({ holeShape: v })} 
+                  <SelectInput
+                    value={el.holeShape || 'radial'}
+                    onChange={(v) => update({ holeShape: v })}
                     options={[
                       { value: 'radial', label: 'Radial Gradient' },
                       { value: 'rectangle', label: 'Rectangle' },
@@ -585,7 +679,7 @@ function ImageAssetProps({ el, update, label = 'Overlay Image' }) {
                       { value: 'circle', label: 'Circle' },
                       { value: 'oval', label: 'Oval' },
                       { value: 'hexagon', label: 'Hexagon' },
-                    ]} 
+                    ]}
                   />
                 </Field>
                 <Field label={`Hole Size (${Math.round((el.holeSize || 0.5) * 100)}%)`}>
