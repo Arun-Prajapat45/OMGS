@@ -11,6 +11,8 @@ export const metadata = {
   description: 'Create stunning custom acrylic wall photos, clocks, hexagon frames and collages.',
 };
 
+export const dynamic = "force-dynamic";
+
 export default function HomePage() {
   return (
     <>
