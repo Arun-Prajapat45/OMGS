@@ -14,6 +14,7 @@ import EditorToolbar from './EditorToolbar';
 import QualityIndicator from './QualityIndicator';
 import { getKonvaClipFunc } from '@/components/engine/shapeRegistry';
 import ElementRenderer from '@/components/engine/ElementRenderer';
+import Studd from '@/assets/studd.png';
 
 const CANVAS_SCALE = 0.45;
 
@@ -174,34 +175,34 @@ function AcrylicOverlay({ width, height }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-export default function KonvaEditorInner({ template, onExport, shape = 'rectangle', triggerExport, onHighResExport }) {
+export default function KonvaEditorInner({ template, onExport, shape = 'rectangle', triggerExport, onHighResExport, hasStuds }) {
   const dispatch = useDispatch();
-  const layers   = useSelector(selectLayers);
-  const textLayers   = useSelector(selectTextLayers);
+  const layers = useSelector(selectLayers);
+  const textLayers = useSelector(selectTextLayers);
   const borderColors = useSelector(selectBorderColors);
   const selectedLayerId = useSelector(selectSelectedLayerId);
-  const zoom     = useSelector(selectZoom);
+  const zoom = useSelector(selectZoom);
 
-  const stageRef      = useRef(null);
-  const fileInputRef  = useRef(null);
+  const stageRef = useRef(null);
+  const fileInputRef = useRef(null);
   const uploadRegionIdRef = useRef(null);
 
   // ── Direct-manipulation refs (no state to avoid re-renders mid-drag) ────────
   const activeDragIdRef = useRef(null);   // regionId currently being dragged
-  const dragStartRef    = useRef({ stageX: 0, stageY: 0, cropX: 0, cropY: 0 });
-  const pinchRef        = useRef(null);   // { regionId, dist, angle, startScale, startRotation }
-  const hasDraggedRef   = useRef(false);  // distinguish click vs drag
-  const zoomRef         = useRef(zoom);   // stable zoom for window handlers
-  const layersRef       = useRef(layers); // stable layers for window handlers
+  const dragStartRef = useRef({ stageX: 0, stageY: 0, cropX: 0, cropY: 0 });
+  const pinchRef = useRef(null);   // { regionId, dist, angle, startScale, startRotation }
+  const hasDraggedRef = useRef(false);  // distinguish click vs drag
+  const zoomRef = useRef(zoom);   // stable zoom for window handlers
+  const layersRef = useRef(layers); // stable layers for window handlers
 
   // Keep refs in sync
   useEffect(() => { zoomRef.current = zoom; }, [zoom]);
   useEffect(() => { layersRef.current = layers; }, [layers]);
 
-  const [isDragging, setIsDragging]     = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [selectedRegionId, setSelectedRegionId] = useState(null);
-  const [uploadRegionId, setUploadRegionId]     = useState(null);
-  const [qualities, setQualities]               = useState({});
+  const [uploadRegionId, setUploadRegionId] = useState(null);
+  const [qualities, setQualities] = useState({});
 
   const [uploadPlaceholderImg] = useImage('/upload.png', 'anonymous');
 
@@ -214,7 +215,7 @@ export default function KonvaEditorInner({ template, onExport, shape = 'rectangl
     if (template && layers.length === 0) dispatch(setTemplate(template));
   }, [dispatch, template, layers.length]);
 
-  const displayWidth  = canvas.width  * CANVAS_SCALE * zoom;
+  const displayWidth = canvas.width * CANVAS_SCALE * zoom;
   const displayHeight = canvas.height * CANVAS_SCALE * zoom;
 
   // Build regionId → layer map
@@ -232,7 +233,7 @@ export default function KonvaEditorInner({ template, onExport, shape = 'rectangl
       const rect = stage.container().getBoundingClientRect();
       const stageX = e.clientX - rect.left;
       const stageY = e.clientY - rect.top;
-      const scale  = CANVAS_SCALE * zoomRef.current;
+      const scale = CANVAS_SCALE * zoomRef.current;
 
       const dx = (stageX - dragStartRef.current.stageX) / scale;
       const dy = (stageY - dragStartRef.current.stageY) / scale;
@@ -252,10 +253,10 @@ export default function KonvaEditorInner({ template, onExport, shape = 'rectangl
     };
 
     window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup',   onMouseUp);
+    window.addEventListener('mouseup', onMouseUp);
     return () => {
       window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup',   onMouseUp);
+      window.removeEventListener('mouseup', onMouseUp);
     };
   }, [dispatch]);
 
@@ -269,12 +270,12 @@ export default function KonvaEditorInner({ template, onExport, shape = 'rectangl
     if (!pos) return;
 
     activeDragIdRef.current = regionId;
-    hasDraggedRef.current   = false;
-    dragStartRef.current    = {
+    hasDraggedRef.current = false;
+    dragStartRef.current = {
       stageX: pos.x,
       stageY: pos.y,
-      cropX:  layer.x || 0,
-      cropY:  layer.y || 0,
+      cropX: layer.x || 0,
+      cropY: layer.y || 0,
     };
     setIsDragging(true);
     konvaEvt.evt.preventDefault?.();
@@ -285,7 +286,7 @@ export default function KonvaEditorInner({ template, onExport, shape = 'rectangl
     konvaEvt.evt.preventDefault();
     const layer = layerMap[regionId];
     if (!layer?.imageUrl) return;
-    const delta    = -konvaEvt.evt.deltaY * 0.0015;
+    const delta = -konvaEvt.evt.deltaY * 0.0015;
     const newScale = Math.max(0.3, Math.min(6, (layer.scaleX || 1) + delta));
     dispatch(updateLayer({ id: regionId, scaleX: newScale, scaleY: newScale }));
   }, [layerMap, dispatch]);
@@ -299,14 +300,14 @@ export default function KonvaEditorInner({ template, onExport, shape = 'rectangl
 
     if (pts.length === 1) {
       const stage = stageRef.current;
-      const pos   = stage?.getPointerPosition();
+      const pos = stage?.getPointerPosition();
       activeDragIdRef.current = regionId;
-      hasDraggedRef.current   = false;
-      dragStartRef.current    = {
+      hasDraggedRef.current = false;
+      dragStartRef.current = {
         stageX: pos?.x || 0,
         stageY: pos?.y || 0,
-        cropX:  layer.x || 0,
-        cropY:  layer.y || 0,
+        cropX: layer.x || 0,
+        cropY: layer.y || 0,
       };
       pinchRef.current = null;
     } else if (pts.length >= 2) {
@@ -315,9 +316,9 @@ export default function KonvaEditorInner({ template, onExport, shape = 'rectangl
       const dy = pts[1].clientY - pts[0].clientY;
       pinchRef.current = {
         regionId,
-        dist:          Math.sqrt(dx * dx + dy * dy),
-        angle:         Math.atan2(dy, dx) * (180 / Math.PI),
-        startScale:    layer.scaleX   || 1,
+        dist: Math.sqrt(dx * dx + dy * dy),
+        angle: Math.atan2(dy, dx) * (180 / Math.PI),
+        startScale: layer.scaleX || 1,
         startRotation: layer.rotation || 0,
       };
     }
@@ -331,7 +332,7 @@ export default function KonvaEditorInner({ template, onExport, shape = 'rectangl
     if (pts.length === 1 && activeDragIdRef.current) {
       // 1-finger drag
       const stage = stageRef.current;
-      const pos   = stage?.getPointerPosition();
+      const pos = stage?.getPointerPosition();
       if (!pos) return;
       const scale = CANVAS_SCALE * zoomRef.current;
       const dx = (pos.x - dragStartRef.current.stageX) / scale;
@@ -345,19 +346,19 @@ export default function KonvaEditorInner({ template, onExport, shape = 'rectangl
 
     } else if (pts.length >= 2 && pinchRef.current) {
       // 2-finger pinch (zoom + rotate)
-      const dx      = pts[1].clientX - pts[0].clientX;
-      const dy      = pts[1].clientY - pts[0].clientY;
-      const newDist  = Math.sqrt(dx * dx + dy * dy);
+      const dx = pts[1].clientX - pts[0].clientX;
+      const dy = pts[1].clientY - pts[0].clientY;
+      const newDist = Math.sqrt(dx * dx + dy * dy);
       const newAngle = Math.atan2(dy, dx) * (180 / Math.PI);
 
-      const scaleRatio  = newDist / pinchRef.current.dist;
-      const angleDelta  = newAngle - pinchRef.current.angle;
-      const newScale    = Math.max(0.3, Math.min(6, pinchRef.current.startScale * scaleRatio));
+      const scaleRatio = newDist / pinchRef.current.dist;
+      const angleDelta = newAngle - pinchRef.current.angle;
+      const newScale = Math.max(0.3, Math.min(6, pinchRef.current.startScale * scaleRatio));
 
       dispatch(updateLayer({
-        id:       pinchRef.current.regionId,
-        scaleX:   newScale,
-        scaleY:   newScale,
+        id: pinchRef.current.regionId,
+        scaleX: newScale,
+        scaleY: newScale,
         rotation: pinchRef.current.startRotation + angleDelta,
       }));
 
@@ -368,10 +369,10 @@ export default function KonvaEditorInner({ template, onExport, shape = 'rectangl
         const dx = pts[1].clientX - pts[0].clientX;
         const dy = pts[1].clientY - pts[0].clientY;
         pinchRef.current = {
-          regionId:      activeDragIdRef.current,
-          dist:          Math.sqrt(dx * dx + dy * dy),
-          angle:         Math.atan2(dy, dx) * (180 / Math.PI),
-          startScale:    layer.scaleX   || 1,
+          regionId: activeDragIdRef.current,
+          dist: Math.sqrt(dx * dx + dy * dy),
+          angle: Math.atan2(dy, dx) * (180 / Math.PI),
+          startScale: layer.scaleX || 1,
           startRotation: layer.rotation || 0,
         };
         activeDragIdRef.current = null;
@@ -383,22 +384,22 @@ export default function KonvaEditorInner({ template, onExport, shape = 'rectangl
     const pts = Array.from(konvaEvt.evt.touches || []);
     if (pts.length === 0) {
       activeDragIdRef.current = null;
-      pinchRef.current        = null;
+      pinchRef.current = null;
       setIsDragging(false);
     } else if (pts.length === 1 && pinchRef.current) {
       // Released one finger — restart single-touch drag
       const regionId = pinchRef.current.regionId;
-      const layer    = layerMap[regionId];
+      const layer = layerMap[regionId];
       pinchRef.current = null;
       if (layer?.imageUrl) {
         const stage = stageRef.current;
-        const pos   = stage?.getPointerPosition();
+        const pos = stage?.getPointerPosition();
         activeDragIdRef.current = regionId;
-        dragStartRef.current    = {
+        dragStartRef.current = {
           stageX: pos?.x || 0,
           stageY: pos?.y || 0,
-          cropX:  layer.x || 0,
-          cropY:  layer.y || 0,
+          cropX: layer.x || 0,
+          cropY: layer.y || 0,
         };
       }
     }
@@ -440,13 +441,13 @@ export default function KonvaEditorInner({ template, onExport, shape = 'rectangl
     if (region) {
       const rW = region.width || (region.radius || 0) * 2;
       const rH = region.height || (region.radius || 0) * 2;
-      const q  = calculateImageQuality(img.naturalWidth, img.naturalHeight, rW / 100, rH / 100);
+      const q = calculateImageQuality(img.naturalWidth, img.naturalHeight, rW / 100, rH / 100);
       setQualities(prev => ({ ...prev, [regionId]: q }));
     }
   }, [dispatch, editableRegions]);
 
   const handleFileInputChange = useCallback((e) => {
-    const file     = e.target.files?.[0];
+    const file = e.target.files?.[0];
     const regionId = uploadRegionIdRef.current || uploadRegionId;
     if (!file || !regionId) return;
     const reader = new FileReader();
@@ -521,6 +522,18 @@ export default function KonvaEditorInner({ template, onExport, shape = 'rectangl
           whileHover={{ scale: 1.005 }}
           transition={{ type: 'spring', stiffness: 400, damping: 30 }}
         >
+          {hasStuds && (() => {
+            const studSize = Math.max(18, Math.min(displayWidth, displayHeight) * 0.07);
+            const offset = studSize * 0.3;
+            return (
+              <>
+                <img src={Studd.src} alt="Stud" className="absolute z-10 pointer-events-none drop-shadow-md" style={{ width: studSize, height: studSize, top: offset, left: offset }} />
+                <img src={Studd.src} alt="Stud" className="absolute z-10 pointer-events-none drop-shadow-md" style={{ width: studSize, height: studSize, top: offset, right: offset }} />
+                <img src={Studd.src} alt="Stud" className="absolute z-10 pointer-events-none drop-shadow-md" style={{ width: studSize, height: studSize, bottom: offset, left: offset }} />
+                <img src={Studd.src} alt="Stud" className="absolute z-10 pointer-events-none drop-shadow-md" style={{ width: studSize, height: studSize, bottom: offset, right: offset }} />
+              </>
+            );
+          })()}
           <Stage
             ref={stageRef}
             width={displayWidth}

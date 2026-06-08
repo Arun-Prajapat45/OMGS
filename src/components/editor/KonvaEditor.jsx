@@ -16,10 +16,10 @@ const KonvaEditorInner = dynamic(() => import('./KonvaEditorInner'), {
   ),
 });
 
-export default function KonvaEditor({ template, onExport, shape = 'rectangle', triggerExport, onHighResExport }) {
+export default function KonvaEditor({ template, onExport, shape = 'rectangle', triggerExport, onHighResExport, hasStuds }) {
   return (
     <Suspense>
-      <KonvaEditorInner template={template} onExport={onExport} shape={shape} triggerExport={triggerExport} onHighResExport={onHighResExport} />
+      <KonvaEditorInner template={template} onExport={onExport} shape={shape} triggerExport={triggerExport} onHighResExport={onHighResExport} hasStuds={hasStuds} />
     </Suspense>
   );
 }

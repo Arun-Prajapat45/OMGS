@@ -25,6 +25,7 @@ import {
 } from '@/store/slices/editorSlice';
 import { useCart } from '@/hooks/useCart';
 import toast from 'react-hot-toast';
+import Studd from '@/assets/studd.png'
 
 // Derive unique sizes and thicknesses from variants
 function deriveVariantDimensions(variants) {
@@ -475,6 +476,7 @@ export default function ProductDetailClient({ product }) {
                   shape={product.shape || 'rectangle'}
                   triggerExport={triggerExport}
                   onHighResExport={handleHighResExport}
+                  hasStuds={hasStuds}
                 />
               ) : (
                 <div className="glass rounded-3xl p-12 text-center text-white/40">
@@ -872,7 +874,7 @@ export default function ProductDetailClient({ product }) {
                 <input type="checkbox" checked={hasStuds} onChange={(e) => setHasStuds(e.target.checked)} className="hidden" />
               </label>
 
-              {/* Frames */}
+              {/* Frames
               <div className="space-y-3">
                 <label className="flex items-center gap-3 cursor-pointer group">
                   <div className={`w-5 h-5 shrink-0 rounded border flex items-center justify-center transition-colors ${addFrame ? 'bg-primary-500 border-primary-500' : 'border-white/20 group-hover:border-white/40'}`}>
@@ -916,7 +918,7 @@ export default function ProductDetailClient({ product }) {
                     </div>
                   </motion.div>
                 )}
-              </div>
+              </div> */}
             </div>
 
             {/* Features */}
@@ -1029,8 +1031,17 @@ export default function ProductDetailClient({ product }) {
           </motion.div>
         )}
       </AnimatePresence>
-      <div className="banner_img overflow-hidden position-relative h-300">
-        <img src="https://adoreprints.in/public/assets/img/b-1.png" alt="Transparent Framed Acrylic Photo" className="img-full" />
+      <div className="banner_img overflow-hidden position-relative">
+        <img
+          src="https://adoreprints.in/public/assets/img/b-1.png"
+          alt="Transparent Framed Acrylic Photo"
+          style={{
+            width: "100%",
+            height: "auto",
+            display: "block",
+            objectFit: "cover",
+          }}
+        />
       </div>
     </div>
   );
