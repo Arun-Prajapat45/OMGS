@@ -751,10 +751,10 @@ export default function ProductDetailClient({ product }) {
 
             {/* Stock & Quantity */}
             <div className="flex items-center gap-4">
-              <div className={`flex items-center gap-1 text-sm ${selectedVariantStock > 0 ? 'text-green-400' : 'text-red-400'}`}>
+              {/* <div className={`flex items-center gap-1 text-sm ${selectedVariantStock > 0 ? 'text-green-400' : 'text-red-400'}`}>
                 <HiCheck className="w-4 h-4" /> {selectedVariantStock > 0 ? `In Stock (${selectedVariantStock})` : 'Out of Stock'}
-              </div>
-              <div className="flex items-center gap-3 glass rounded p-1">
+              </div> */}
+              <div className="flex items-center gap-2 glass rounded">
                 <button
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
                   className="w-9 h-9 rounded-lg hover:bg-white/10 text-white flex items-center justify-center transition-all font-bold"
@@ -777,30 +777,54 @@ export default function ProductDetailClient({ product }) {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-3">
+            <div className="flex gap-2">
+              {/* Wishlist */}
               <button
                 onClick={handleToggleWishlist}
                 disabled={isUploading}
-                className={`flex-1 flex items-center justify-center gap-1 rounded border text-white font-bold transition-all ${isWishlisted ? 'bg-white/10 border-primary-500 text-primary-300' : 'glass border-white/20 hover:bg-white/10 hover:text-white'} ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`flex items-center justify-center gap-2
+                  w-12 sm:flex-1 sm:w-auto
+                  h-12 rounded-lg border transition-all
+                  ${isWishlisted
+                    ? "bg-white/10 border-primary-500 text-primary-300"
+                    : "glass border-white/20 hover:bg-white/10"
+                  }
+                  ${isUploading ? "opacity-50 cursor-not-allowed" : ""}
+                `}
               >
-                <HiOutlineHeart className={`w-5 h-5 ${isWishlisted ? 'text-red-400' : 'text-white/70'}`} />
-                {isWishlisted ? 'Wishlisted' : 'Add to Wishlist'}
+                <HiOutlineHeart
+                  className={`w-5 h-5 ${isWishlisted ? "text-red-400" : "text-white/70"
+                    }`}
+                />
+                <span className="hidden sm:inline">
+                  {isWishlisted ? "Wishlisted" : "Add to Wishlist"}
+                </span>
               </button>
+
+              {/* Cart */}
               <button
                 onClick={handleAddToCart}
                 disabled={isUploading}
-                className="flex-1 flex items-center justify-center gap-2 py-4 rounded glass border border-white/20 text-white font-bold hover:bg-white/10 transition-all disabled:opacity-50"
+                className="flex items-center justify-center gap-2
+                  w-12 sm:flex-1 sm:w-auto
+                  h-12 rounded-lg glass border border-white/20
+                  text-white font-semibold hover:bg-white/10
+                  transition-all disabled:opacity-50"
               >
                 <HiOutlineShoppingCart className="w-5 h-5" />
-                {isUploading ? 'Saving...' : 'Add to Cart'}
+                <span className="hidden sm:inline">
+                  {isUploading ? "Saving..." : "Add to Cart"}
+                </span>
               </button>
+
+              {/* Buy Now */}
               <button
                 onClick={handleBuyNow}
                 disabled={isUploading}
-                className="flex-1 flex items-center justify-center gap-2 py-4 rounded gradient-primary text-white font-bold hover:opacity-90 transition-all glow disabled:opacity-50"
+                className="flex-1 flex items-center justify-center gap-2 h-12 rounded-lg gradient-primary text-white font-bold hover:opacity-90 transition-all glow disabled:opacity-50"
               >
                 <HiLightningBolt className="w-5 h-5" />
-                Buy Now
+                <span>Buy Now</span>
               </button>
             </div>
 

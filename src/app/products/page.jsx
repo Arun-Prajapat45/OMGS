@@ -97,8 +97,8 @@ export default async function ProductsPage({ searchParams }) {
   const products = raw.map(serializeProduct);
 
   return (
-    <div className="pt-20 min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div className="pt-15 min-h-screen">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
         {/* Page Header */}
         <div className="mb-8">
           <h1 className="font-display text-4xl font-bold text-white mb-2">

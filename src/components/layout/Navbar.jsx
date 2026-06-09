@@ -185,13 +185,10 @@ export default function Navbar() {
           </nav>
 
           {/* Right Actions */}
-          <div className="flex items-center gap-3">
-            {/* Search */}
-
-
+          <div className="flex items-center gap-1 sm:gap-3">
             <button
               onClick={toggleTheme}
-              className="p-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-all"
+              className="p-2 sm:p-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-all"
               aria-label="Toggle theme"
             >
               {theme === 'dark' ? (
@@ -201,47 +198,51 @@ export default function Navbar() {
               )}
             </button>
 
-            {/* Wishlist */}
-            <Link
-              href="/wishlist"
-              className="relative p-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-all hidden sm:flex"
-              aria-label="Wishlist"
-            >
-              <HiOutlineHeart className="w-5 h-5" />
-              {wishlistItems.length > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-accent-500 rounded-full text-xs font-bold text-white flex items-center justify-center">
-                  {wishlistItems.length}
-                </span>
-              )}
-            </Link>
-
-            {/* Cart */}
-            <button
-              onClick={() => dispatch(toggleCart())}
-              className="relative p-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-all"
-              aria-label="Cart"
-            >
-              <HiOutlineShoppingCart className="w-5 h-5" />
-              {cartCount > 0 && (
-                <motion.span
-                  key={cartCount}
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="absolute -top-1 -right-1 w-5 h-5 gradient-primary rounded-full text-xs font-bold text-white flex items-center justify-center"
+            {session?.user && (
+              <>
+                {/* Wishlist */}
+                <Link
+                  href="/wishlist"
+                  className="relative p-2 sm:p-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-all flex"
+                  aria-label="Wishlist"
                 >
-                  {cartCount}
-                </motion.span>
-              )}
-            </button>
+                  <HiOutlineHeart className="w-5 h-5" />
+                  {wishlistItems.length > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-accent-500 rounded-full text-xs font-bold text-white flex items-center justify-center">
+                      {wishlistItems.length}
+                    </span>
+                  )}
+                </Link>
+
+                {/* Cart */}
+                <button
+                  onClick={() => dispatch(toggleCart())}
+                  className="relative p-2 sm:p-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-all"
+                  aria-label="Cart"
+                >
+                  <HiOutlineShoppingCart className="w-5 h-5" />
+                  {cartCount > 0 && (
+                    <motion.span
+                      key={cartCount}
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="absolute -top-1 -right-1 w-5 h-5 gradient-primary rounded-full text-xs font-bold text-white flex items-center justify-center"
+                    >
+                      {cartCount}
+                    </motion.span>
+                  )}
+                </button>
+              </>
+            )}
 
             {/* User */}
             {session?.user ? (
-              <div className="relative group hidden sm:block">
-                <button className="flex items-center gap-2 p-2 rounded-xl hover:bg-white/10 transition-all">
+              <div className="relative group">
+                <button className="flex items-center gap-2 p-1.5 sm:p-2 rounded-xl hover:bg-white/10 transition-all">
                   {session.user.image ? (
-                    <Image src={session.user.image} alt={session.user.name} width={32} height={32} className="rounded-full" />
+                    <Image src={session.user.image} alt={session.user.name} width={32} height={32} className="w-7 h-7 sm:w-8 sm:h-8 rounded-full" />
                   ) : (
-                    <div className="w-8 h-8 gradient-primary rounded-full flex items-center justify-center">
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 gradient-primary rounded-full flex items-center justify-center">
                       <span className="text-sm font-bold">{session.user.name?.[0]}</span>
                     </div>
                   )}
@@ -268,19 +269,21 @@ export default function Navbar() {
             ) : (
               <Link
                 href="/auth/login"
-                className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl gradient-primary text-white text-sm font-semibold hover:opacity-90 transition-all glow"
+                className="flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl gradient-primary text-white text-sm font-semibold hover:opacity-90 transition-all glow"
               >
                 Sign In
               </Link>
             )}
 
             {/* Mobile Menu Button */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-all"
-            >
-              {mobileMenuOpen ? <HiX className="w-5 h-5" /> : <HiOutlineMenu className="w-5 h-5" />}
-            </button>
+            {session?.user && (
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="lg:hidden p-2 sm:p-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-all"
+              >
+                {mobileMenuOpen ? <HiX className="w-5 h-5" /> : <HiOutlineMenu className="w-5 h-5" />}
+              </button>
+            )}
           </div>
         </div>
       </div>
