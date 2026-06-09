@@ -66,6 +66,7 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeMegaMenu, setActiveMegaMenu] = useState(null);
   const [theme, setTheme] = useState('dark');
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const megaMenuTimeout = useRef(null);
 
   useEffect(() => {
@@ -238,7 +239,10 @@ export default function Navbar() {
             {/* User */}
             {session?.user ? (
               <div className="relative group">
-                <button className="flex items-center gap-2 p-1.5 sm:p-2 rounded-xl hover:bg-white/10 transition-all">
+                <button 
+                  onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+                  className="flex items-center gap-2 p-1.5 sm:p-2 rounded-xl hover:bg-white/10 transition-all"
+                >
                   {session.user.image ? (
                     <Image src={session.user.image} alt={session.user.name} width={32} height={32} className="w-7 h-7 sm:w-8 sm:h-8 rounded-full" />
                   ) : (
@@ -247,14 +251,18 @@ export default function Navbar() {
                     </div>
                   )}
                 </button>
-                <div className="absolute right-0 top-full mt-2 w-48 glass-dark rounded-2xl shadow-premium p-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
-                  <Link href="/account" className="flex items-center gap-2 px-4 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/10 rounded-xl transition-all">
+                {/* Mobile overlay to close menu */}
+                {profileMenuOpen && (
+                  <div className="fixed inset-0 z-40 lg:hidden" onClick={() => setProfileMenuOpen(false)} />
+                )}
+                <div className={cn("absolute right-0 top-full mt-2 w-48 glass-dark rounded-2xl shadow-premium p-2 transition-all z-50", profileMenuOpen ? "opacity-100 visible" : "opacity-0 invisible group-hover:opacity-100 group-hover:visible")}>
+                  <Link href="/account" onClick={() => setProfileMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/10 rounded-xl transition-all">
                     <HiOutlineUser className="w-4 h-4" /> My Account
                   </Link>
-                  <Link href="/orders" className="flex items-center gap-2 px-4 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/10 rounded-xl transition-all">
+                  <Link href="/orders" onClick={() => setProfileMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/10 rounded-xl transition-all">
                     My Orders
                   </Link>
-                  <Link href="/designs" className="flex items-center gap-2 px-4 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/10 rounded-xl transition-all">
+                  <Link href="/designs" onClick={() => setProfileMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/10 rounded-xl transition-all">
                     My Designs
                   </Link>
                   <hr className="my-1 border-white/10" />
