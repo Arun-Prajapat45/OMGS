@@ -61,7 +61,7 @@ export default function LoginPage() {
               <span className="text-white font-bold text-2xl">O</span>
             </div>
             <h1 className="font-display text-2xl font-bold text-white">Welcome Back</h1>
-            <p className="text-white/50 text-sm mt-1">Sign in to your OMGS account</p>
+            <p className="text-white/50 text-sm mt-1">Sign in to your Adore account</p>
           </div>
 
           {/* Google */}
@@ -133,7 +133,7 @@ export default function LoginPage() {
           </form>
 
           <p className="text-center text-sm text-white/50 mt-6">
-            New to OMGS?{' '}
+            New to Adore Prints?{' '}
             <Link href="/auth/register" className="text-primary-400 hover:text-primary-300 font-medium transition-colors">
               Create account
             </Link>

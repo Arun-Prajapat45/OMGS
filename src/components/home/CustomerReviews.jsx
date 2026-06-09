@@ -8,7 +8,7 @@ const REVIEWS = [
     id: 1,
     name: 'Priya Sharma',
     avatar: 'PS',
-    location: 'Mumbai',
+    location: 'Jaipur',
     rating: 5,
     title: 'Absolutely stunning quality!',
     review: 'I ordered the hexagon photo clock for my anniversary and it exceeded all expectations. The acrylic clarity is incredible and the colors are so vivid. My husband loved it!',
@@ -30,7 +30,7 @@ const REVIEWS = [
     id: 3,
     name: 'Ananya Patel',
     avatar: 'AP',
-    location: 'Bangalore',
+    location: 'Jaipur',
     rating: 5,
     title: 'Best gift I\'ve ever given!',
     review: 'The baby birth frame for my sister was beyond beautiful. The acrylic print has such depth and the custom text was perfectly done. Fast delivery too!',
@@ -55,10 +55,10 @@ export default function CustomerReviews() {
             ))}
           </div>
           <h2 className="font-display text-4xl sm:text-5xl font-bold">
-            Loved by <span className="text-gradient">50,000+</span> Customers
+            Loved by <span className="text-gradient">5,000+</span> Customers
           </h2>
           <p className="mt-4 text-white/50 text-lg max-w-xl mx-auto">
-            Real reviews from real customers who trust OMGS for their precious memories.
+            Real reviews from real customers who trust Adore Prints for their precious memories.
           </p>
         </motion.div>
 

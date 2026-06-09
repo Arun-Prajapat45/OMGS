@@ -58,10 +58,10 @@ export default function RegisterPage() {
         <div className="glass rounded-3xl p-8 shadow-premium border border-white/10">
           <div className="text-center mb-8">
             <div className="w-14 h-14 rounded-2xl gradient-primary mx-auto flex items-center justify-center glow mb-4">
-              <span className="text-white font-bold text-2xl">O</span>
+              <span className="text-white font-bold text-2xl">A</span>
             </div>
             <h1 className="font-display text-2xl font-bold text-white">Create Account</h1>
-            <p className="text-white/50 text-sm mt-1">Join OMGS today</p>
+            <p className="text-white/50 text-sm mt-1">Join AdorePrints today</p>
           </div>
 
           <button

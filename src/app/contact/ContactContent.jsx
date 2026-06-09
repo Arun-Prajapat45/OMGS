@@ -121,7 +121,7 @@ export default function ContactContent() {
                         <h3 className="text-xl font-bold text-white mb-2">Instagram</h3>
                         <p className="text-white/60 mb-4">See the latest designs and customer photos.</p>
                         <a
-                            href="https://instagram.com/omgs.in"
+                            href="https://instagram.com/adoreprints.in"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-pink-400 font-semibold hover:text-pink-300 transition-colors flex items-center gap-2"

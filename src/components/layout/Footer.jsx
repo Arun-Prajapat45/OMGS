@@ -63,7 +63,7 @@ export default function Footer() {
             </p>
             <div className="flex items-center gap-2 text-white/50 text-sm mb-2">
               <FiMail className="w-4 h-4 flex-shrink-0" />
-              <span>hello@omgs.in</span>
+              <span>hello@adoreprints.in</span>
             </div>
             <div className="flex items-center gap-2 text-white/50 text-sm">
               <FiPhone className="w-4 h-4 flex-shrink-0" />
