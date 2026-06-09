@@ -26,6 +26,7 @@ import {
 import { useCart } from '@/hooks/useCart';
 import toast from 'react-hot-toast';
 import Studd from '@/assets/studd.png'
+import Dummy from '@/assets/dummy.jpeg'
 
 // Derive unique sizes and thicknesses from variants
 function deriveVariantDimensions(variants) {
@@ -1057,7 +1058,7 @@ export default function ProductDetailClient({ product }) {
       </AnimatePresence>
       <div className="banner_img overflow-hidden position-relative">
         <img
-          src="https://adoreprints.in/public/assets/img/b-1.png"
+          src={Dummy.src}
           alt="Transparent Framed Acrylic Photo"
           style={{
             width: "100%",
