@@ -132,6 +132,26 @@ export default function ContactContent() {
                 </div>
             </section>
 
+            {/* Map Section */}
+            <section className="py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+                <motion.div
+                    {...fadeInUp}
+                    className="glass rounded-3xl overflow-hidden border border-white/10 relative h-[400px] md:h-[500px]"
+                >
+                    <iframe
+                        src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d3556.0747301256883!2d75.7533626!3d26.9645327!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x396db37f24cdc8a1%3A0x5c2bfca5f2aabd5b!2sAdore%20Prints!5e0!3m2!1sen!2sin!4v1780984481969!5m2!1sen!2sin"
+                        width="100%"
+                        height="100%"
+                        style={{ border: 0 }}
+                        allowFullScreen=""
+                        loading="lazy"
+                        referrerPolicy="no-referrer-when-downgrade"
+                        title="Our Location"
+                        className="absolute inset-0 grayscale-[15%] contrast-[1.1] hover:grayscale-0 transition-all duration-700"
+                    ></iframe>
+                </motion.div>
+            </section>
+
             {/* FAQ Section */}
             <section className="py-24 px-4 sm:px-6 lg:px-8 max-w-3xl mx-auto">
                 <motion.div {...fadeInUp} className="text-center mb-16">

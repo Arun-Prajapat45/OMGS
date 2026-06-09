@@ -2,11 +2,15 @@ import { NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
 export async function middleware(req) {
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  const token = await getToken({ 
+    req, 
+    secret: process.env.NEXTAUTH_SECRET,
+    secureCookie: process.env.NODE_ENV === 'production',
+  });
   const { pathname } = req.nextUrl;
 
   const isLoggedIn = !!token;
-  const isAdmin = token?.role === 'ADMIN';
+  const isAdmin = token?.role === 'ADMIN' || token?.role === 'MANAGER' || token?.role === 'admin' || token?.role === 'manager';
 
   const isAdminRoute = pathname.startsWith('/admin');
   const isProtectedRoute = pathname.startsWith('/account') || pathname.startsWith('/orders') || pathname.startsWith('/checkout');
