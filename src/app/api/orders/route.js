@@ -36,12 +36,43 @@ export async function POST(req) {
     const total = subtotal - discount + deliveryFee;
     const orderNumber = generateOrderNumber();
 
-    // Bypass Razorpay order creation for now
-    // const razorpayOrder = await createRazorpayOrder({
-    //   amount: total,
-    //   receipt: orderNumber,
-    //   notes: { userId: session.user.id, orderNumber },
-    // });
+    const cashfreeUrl = process.env.CASHFREE_ENV === 'PROD' 
+      ? 'https://api.cashfree.com/pg/orders' 
+      : 'https://sandbox.cashfree.com/pg/orders';
+
+    const orderPayload = {
+      order_amount: total,
+      order_currency: "INR",
+      order_id: orderNumber,
+      customer_details: {
+        customer_id: session.user.id || "guest",
+        customer_phone: shippingAddress.phone || "9999999999",
+        customer_email: shippingAddress.email || "test@example.com",
+        customer_name: shippingAddress.fullName || "Test User"
+      },
+      order_meta: {
+        return_url: `${process.env.NEXTAUTH_URL?.replace('http://localhost', 'https://localhost')}/api/payments/cashfree-verify?order_id={order_id}`
+      }
+    };
+
+    const cashfreeRes = await fetch(cashfreeUrl, {
+      method: 'POST',
+      headers: {
+        'x-client-id': process.env.CASHFREE_CLIENT_ID,
+        'x-client-secret': process.env.CASHFREE_CLIENT_SECRET,
+        'x-api-version': '2023-08-01',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(orderPayload),
+    });
+
+    if (!cashfreeRes.ok) {
+      const errorData = await cashfreeRes.json();
+      console.error('Cashfree order creation failed:', errorData);
+      return NextResponse.json({ error: 'Payment gateway error' }, { status: 500 });
+    }
+
+    const cashfreeOrder = await cashfreeRes.json();
 
     // Create pending order in DB
     const order = await prisma.order.create({
@@ -75,10 +106,8 @@ export async function POST(req) {
 
     return NextResponse.json({
       orderId: order.id,
-      // razorpayOrderId: razorpayOrder.id,
-      // amount: razorpayOrder.amount,
-      // currency: razorpayOrder.currency,
-      // keyId: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+      paymentSessionId: cashfreeOrder.payment_session_id,
+      cashfreeOrderId: cashfreeOrder.order_id
     });
   } catch (error) {
     console.error('Order creation error:', error);

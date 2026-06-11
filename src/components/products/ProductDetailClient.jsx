@@ -151,7 +151,7 @@ export default function ProductDetailClient({ product }) {
     }
 
     const isRectangle = product?.shape?.toLowerCase() === 'rectangle';
-    const targetW = parseFloat(match[1]) * (isRectangle ? 15 : 30);
+    const targetW = parseFloat(match[1]) * (isRectangle ? 30 : 30);
     const targetH = parseFloat(match[2]) * 30;
 
     const origW = baseTemplate.canvas?.width || targetW;

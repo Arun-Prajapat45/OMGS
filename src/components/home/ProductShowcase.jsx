@@ -43,7 +43,7 @@ export default function ProductShowcase() {
   };
 
   return (
-    <section className="relative w-full h-[80vh] min-h-[600px] bg-[#1d1d1f] overflow-hidden select-none">
+    <section className="relative w-full h-[100svh] md:h-[80vh] md:min-h-[600px] bg-[#1d1d1f] overflow-hidden select-none">
       {/* Slider Container */}
       <div
         className="flex h-full w-full"
@@ -58,7 +58,7 @@ export default function ProductShowcase() {
             <div className="flex flex-col md:flex-row h-full w-full">
 
               {/* Left Side - Video Container */}
-              <div className="w-full md:w-1/2 h-1/2 md:h-full relative bg-black">
+              <div className="w-full md:w-1/2 h-[55%] md:h-full relative bg-black">
                 <video
                   className="absolute inset-0 w-full h-full object-cover"
                   autoPlay
@@ -71,7 +71,7 @@ export default function ProductShowcase() {
               </div>
 
               {/* Right Side - Description Text Container */}
-              <div className="w-full md:w-1/2 h-1/2 md:h-full flex flex-col items-center justify-center text-center px-8 md:px-16 py-12 text-white bg-[#1d1d1f]">
+              <div className="w-full md:w-1/2 h-[45%] md:h-full flex flex-col items-center justify-center text-center px-6 md:px-16 py-6 md:py-12 text-white bg-[#1d1d1f]">
                 <p className="text-[10px] md:text-xs uppercase tracking-[0.2em] mb-4 text-gray-400">
                   {index + 1} / {slideData.length}
                 </p>

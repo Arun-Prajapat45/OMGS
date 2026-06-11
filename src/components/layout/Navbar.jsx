@@ -262,9 +262,7 @@ export default function Navbar() {
                   <Link href="/orders" onClick={() => setProfileMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/10 rounded-xl transition-all">
                     My Orders
                   </Link>
-                  <Link href="/designs" onClick={() => setProfileMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/10 rounded-xl transition-all">
-                    My Designs
-                  </Link>
+
                   <hr className="my-1 border-white/10" />
                   <button
                     onClick={() => signOut()}

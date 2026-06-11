@@ -12,6 +12,7 @@ import { selectCartItems, selectCartSubtotal, selectCartTotal } from '@/store/sl
 import { useCart } from '@/hooks/useCart';
 import { formatPrice } from '@/lib/utils';
 import toast from 'react-hot-toast';
+import { load } from '@cashfreepayments/cashfree-js';
 
 const addressSchema = z.object({
   fullName: z.string().min(2),
@@ -46,25 +47,26 @@ export default function CheckoutPage() {
       });
 
       if (!orderRes.ok) throw new Error('Order creation failed');
-      const { orderId } = await orderRes.json();
+      const { orderId, paymentSessionId } = await orderRes.json();
 
-      // Mock Payment - bypass Razorpay
-      const payRes = await fetch(`/api/orders/${orderId}/pay`, {
-        method: 'POST',
+      // Clear cart before redirecting
+      await clearCart();
+
+      // Initialize Cashfree
+      const cashfree = await load({
+        mode: process.env.NEXT_PUBLIC_CASHFREE_ENV === 'PROD' ? 'production' : 'sandbox',
       });
 
-      if (payRes.ok) {
-        await clearCart();
-        toast.success('Order placed successfully! 🎉');
-        router.push(`/orders/${orderId}?success=1`);
-      } else {
-        toast.error('Payment verification failed');
-      }
+      // Redirect to Cashfree checkout
+      cashfree.checkout({
+        paymentSessionId: paymentSessionId,
+      });
+
     } catch (error) {
       console.error(error);
       toast.error('Something went wrong. Please try again.');
+      setProcessing(false);
     }
-    setProcessing(false);
   };
 
   if (items.length === 0) {
@@ -200,7 +202,7 @@ export default function CheckoutPage() {
 
               <div className="flex items-center justify-center gap-2 mt-3 text-white/30 text-xs">
                 <HiShieldCheck className="w-4 h-4" />
-                <span>100% Secure Payment via Razorpay</span>
+                <span>100% Secure Payment via Cashfree</span>
               </div>
             </motion.div>
           </div>
