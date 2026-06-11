@@ -16,6 +16,7 @@ import { CLIP_PATHS, SVG_PATHS } from '@/components/engine/shapeRegistry';
 import { AcrylicDepthShadow, GlassReflection, FloatingCard } from '@/components/engine/AcrylicEffects';
 import { Edit2 } from 'lucide-react';
 import secondaryImage from '../../assets/secondary_image.png';
+import { ImgDefault, ImgBirthday, ImgBabyShower, ImgAnniversary, ImgOccasion, ImgCouple, ImgFriends, ImgFamily } from './Images';
 
 const getProductMinPrice = (product) => {
   if (!Array.isArray(product?.variants) || product.variants.length === 0) return 0;
@@ -357,7 +358,7 @@ function SvgClipWrapper({ svgPath, children }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared Card Image Block for Single Shapes & Collages
 // ─────────────────────────────────────────────────────────────────────────────
-export function CardImageBlock({ product, template, isCollage, shape, isCircle, primaryImage, showSecondary }) {
+export function CardImageBlock({ product, template, isCollage, shape, isCircle, primaryImage, showSecondary, fallbackArray }) {
   const regionImages = parseProductImages(product.images);
   const clipPath = getShapeClipPath(shape);
   const svgPath = SVG_PATHS[shape?.toLowerCase()];
@@ -404,7 +405,16 @@ export function CardImageBlock({ product, template, isCollage, shape, isCircle, 
       const zIndex = el.zIndex || 0;
 
       if (isSlot) {
-        const regionImg = getRegionImage(el, slotCount, regionImages, primaryImage);
+        let slotFallback = primaryImage;
+        if (fallbackArray && isCollage) {
+          let seed = slotCount;
+          const str = String(product?.id || 'default');
+          for (let k = 0; k < str.length; k++) {
+            seed += str.charCodeAt(k);
+          }
+          slotFallback = fallbackArray[seed % fallbackArray.length];
+        }
+        const regionImg = getRegionImage(el, slotCount, regionImages, slotFallback);
         slotCount++;
         const regionClip = getRegionClipPath(el, template);
         const fxStyle = buildPhotoEffectStyle(el);
@@ -588,7 +598,37 @@ export function ProductCard({ product, index, showSecondary }) {
   const isCircle = shape?.toLowerCase() === 'circle';
   const isCollage = (template?.uploadableRegions?.length || 0) > 1;
 
-  const primaryImage = product.featuredImage || (product.images && product.images[0]) || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&q=80';
+  const { primaryImage, fallbackArray } = useMemo(() => {
+    if (product.featuredImage) return { primaryImage: product.featuredImage, fallbackArray: null };
+    if (product.images && product.images.length > 0) return { primaryImage: product.images[0], fallbackArray: null };
+
+    const getSeededRandom = (arr) => {
+      let seed = 0;
+      const str = String(product.id || 'default');
+      for (let i = 0; i < str.length; i++) {
+        seed += str.charCodeAt(i);
+      }
+      return arr[seed % arr.length];
+    };
+
+    let arr = ImgDefault;
+    const catStr = (product.category?.name || product.categoryId || '').toString().toLowerCase();
+    const subCatStr = (product.sub_category?.name || product.subcategoryId || '').toString().toLowerCase();
+
+    if (catStr.includes('wall photo') || catStr.includes('collage photo')) {
+      arr = ImgDefault;
+    } else if (catStr.includes('gifts') || catStr.includes('special')) {
+      if (subCatStr.includes('couple')) arr = ImgCouple;
+      else if (subCatStr.includes('family')) arr = ImgFamily;
+      else if (subCatStr.includes('friend')) arr = ImgFriends;
+      else if (subCatStr.includes('birthday')) arr = ImgBirthday;
+      else if (subCatStr.includes('anniversary')) arr = ImgAnniversary;
+      else if (subCatStr.includes('baby')) arr = ImgBabyShower;
+      else arr = ImgOccasion;
+    }
+
+    return { primaryImage: getSeededRandom(arr), fallbackArray: arr };
+  }, [product]);
 
   return (
     <Link
@@ -606,6 +646,7 @@ export function ProductCard({ product, index, showSecondary }) {
             isCircle={isCircle}
             primaryImage={primaryImage}
             showSecondary={showSecondary}
+            fallbackArray={fallbackArray}
           />
         </div>
       </div>

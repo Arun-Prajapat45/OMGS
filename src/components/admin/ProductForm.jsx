@@ -162,22 +162,22 @@ export default function ProductForm({ product, categories, subCategories, templa
   const handleHighResExport = async (highResUri) => {
     setTriggerExport(false);
     if (!highResUri) return;
-    
+
     const toastId = toast.loading('Uploading preview image...');
     setUploading(true);
     try {
       const res = await fetch(highResUri);
       const blob = await res.blob();
       const file = new File([blob], `preview-${Date.now()}.webp`, { type: 'image/webp' });
-      
+
       const formData = new FormData();
       formData.append('file', file);
-      
+
       const uploadRes = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
       });
-      
+
       const data = await uploadRes.json();
       if (uploadRes.ok) {
         const url = data.url || data.secureUrl;
@@ -269,10 +269,10 @@ export default function ProductForm({ product, categories, subCategories, templa
               <label className="block text-sm text-white/60 mb-1">Category *</label>
               {isNewCategory ? (
                 <div className="flex gap-2">
-                  <input 
-                    {...register('newCategoryName')} 
-                    placeholder="Enter new category name..." 
-                    className="flex-1 w-full bg-black/20 border border-white/10 rounded-lg p-2 text-white" 
+                  <input
+                    {...register('newCategoryName')}
+                    placeholder="Enter new category name..."
+                    className="flex-1 w-full bg-black/20 border border-white/10 rounded-lg p-2 text-white"
                   />
                   <button type="button" onClick={() => { setIsNewCategory(false); setValue('newCategoryName', ''); }} className="px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white text-sm">Cancel</button>
                 </div>
@@ -294,10 +294,10 @@ export default function ProductForm({ product, categories, subCategories, templa
               <label className="block text-sm text-white/60 mb-1">SubCategory</label>
               {isNewSubCategory ? (
                 <div className="flex gap-2">
-                  <input 
-                    {...register('newSubCategoryName')} 
-                    placeholder="Enter new subcategory name..." 
-                    className="flex-1 w-full bg-black/20 border border-white/10 rounded-lg p-2 text-white" 
+                  <input
+                    {...register('newSubCategoryName')}
+                    placeholder="Enter new subcategory name..."
+                    className="flex-1 w-full bg-black/20 border border-white/10 rounded-lg p-2 text-white"
                   />
                   <button type="button" onClick={() => { setIsNewSubCategory(false); setValue('newSubCategoryName', ''); }} className="px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white text-sm">Cancel</button>
                 </div>
@@ -316,7 +316,7 @@ export default function ProductForm({ product, categories, subCategories, templa
               )}
               {errors.subCategoryId && <p className="text-red-400 text-xs mt-1">{errors.subCategoryId.message}</p>}
             </div>
-            
+
             <div className="md:col-span-2 p-4 border border-white/10 rounded-xl bg-white/5">
               <label className="block text-sm text-white/60 mb-2">Template Base *</label>
               <select {...register('templateId')} className="w-full bg-black/20 border border-white/10 rounded-lg p-2 text-white [&>option]:bg-gray-900 mb-4">
@@ -324,7 +324,7 @@ export default function ProductForm({ product, categories, subCategories, templa
                 {templates.map(t => <option key={t.id} value={t.id}>{t.name} ({t.productType})</option>)}
               </select>
               {errors.templateId && <p className="text-red-400 text-xs mt-1 mb-2">{errors.templateId.message}</p>}
-              
+
               {selectedTemplate && (
                 <div className="flex gap-4 items-center bg-black/20 p-3 rounded-lg border border-white/5">
                   {selectedTemplate.previewImage ? (
@@ -420,10 +420,10 @@ export default function ProductForm({ product, categories, subCategories, templa
                   </button>
                 </h3>
                 <div className="bg-black/40 rounded-xl p-4 overflow-hidden border border-white/5 relative flex justify-center w-full min-h-[400px]">
-                  <KonvaEditor 
-                    template={selectedTemplate.templateJson} 
-                    onExport={() => {}} 
-                    shape={selectedTemplate.shape || 'rectangle'} 
+                  <KonvaEditor
+                    template={selectedTemplate.templateJson}
+                    onExport={() => { }}
+                    shape={selectedTemplate.shape || 'rectangle'}
                     triggerExport={triggerExport}
                     onHighResExport={handleHighResExport}
                   />
@@ -448,15 +448,8 @@ export default function ProductForm({ product, categories, subCategories, templa
                   <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} disabled={uploading} />
                 </label>
               </div>
-
-              <div className="p-4 border border-white/10 rounded-xl bg-black/10">
-                <label className="flex items-center gap-3 text-sm text-white cursor-pointer">
-                  <input type="checkbox" {...register('is3dEnabled')} className="form-checkbox h-5 w-5 rounded bg-black/20 border-white/10" />
-                  <span>Enable 3D View for this product</span>
-                </label>
-              </div>
             </div>
-            
+
             {watchImages.length > 0 && (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {watchImages.map((url, idx) => (
