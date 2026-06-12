@@ -67,7 +67,7 @@ export default function Footer() {
             </div>
             <div className="flex items-center gap-2 text-white/50 text-sm">
               <FiPhone className="w-4 h-4 flex-shrink-0" />
-              <span>+91 98765 43210</span>
+              <span>+91 75979 25283</span>
             </div>
           </div>
 
@@ -114,7 +114,7 @@ export default function Footer() {
           {/* Payment icons */}
           <div className="flex items-center gap-2 text-white/30 text-xs">
             <span>Secured by</span>
-            <span className="font-semibold text-white/50">Razorpay</span>
+            <span className="font-semibold text-white/50">CashFree</span>
             <span>•</span>
             <span className="font-semibold text-white/50">SSL</span>
           </div>

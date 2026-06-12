@@ -127,13 +127,13 @@ function buildPhotoEffectStyle(region) {
 
   const filters = [];
   if (fx.brightness) filters.push(`brightness(${1 + fx.brightness / 100})`);
-  if (fx.contrast)   filters.push(`contrast(${1 + fx.contrast / 100})`);
+  if (fx.contrast) filters.push(`contrast(${1 + fx.contrast / 100})`);
   if (fx.saturation) filters.push(`saturate(${1 + fx.saturation / 100})`);
-  if (fx.hue)        filters.push(`hue-rotate(${fx.hue}deg)`);
+  if (fx.hue) filters.push(`hue-rotate(${fx.hue}deg)`);
 
   // Feathering: approximate with CSS mask-image
   let maskImage;
-  const featherType   = fx.featherType || 'none';
+  const featherType = fx.featherType || 'none';
   const featherRadius = (fx.featherRadius ?? 0) / 100;
   if (featherType !== 'none' && featherRadius > 0) {
     const stop = `${Math.round((1 - featherRadius) * 100)}%`;
@@ -378,13 +378,12 @@ export function CardImageBlock({ product, template, isCollage, shape, isCircle, 
   const templateBackground = template?.templateBackground || null;
 
   // SVG-path shapes use getImageDimensions; collages of non-SVG shapes use aspect-square
-  const outerClass = `relative flex items-center justify-center transition-all duration-500 ease-out group-hover:scale-[1.02] ${
-    isSvgShape || !isCollage ? getImageDimensions(shape) : 'w-[90%] aspect-square'
-  }`;
+  const outerClass = `relative flex items-center justify-center transition-all duration-500 ease-out group-hover:scale-[1.02] ${isSvgShape || !isCollage ? getImageDimensions(shape) : 'w-[90%] aspect-square'
+    }`;
 
   // Shared collage region renderer
   const renderElements = () => {
-    const els = template?.elements 
+    const els = template?.elements
       ? [...template.elements].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0))
       : (template?.uploadableRegions || []);
 
@@ -394,10 +393,10 @@ export function CardImageBlock({ product, template, isCollage, shape, isCircle, 
       if (el.type === 'background') return null;
 
       const isSlot = el.type === 'image-placeholder' || el.uploadSlot != null || el.uploadableSlot != null;
-      
-      const left   = ((el.x || 0) / canvasW) * 100;
-      const top    = ((el.y || 0) / canvasH) * 100;
-      const width  = ((el.width  || (el.radius ?? 0) * 2) / canvasW) * 100;
+
+      const left = ((el.x || 0) / canvasW) * 100;
+      const top = ((el.y || 0) / canvasH) * 100;
+      const width = ((el.width || (el.radius ?? 0) * 2) / canvasW) * 100;
       const height = ((el.height || (el.radius ?? 0) * 2) / canvasH) * 100;
       const opacity = el.opacity ?? 1;
       const mixBlendMode = el.blendMode && el.blendMode !== 'source-over' ? el.blendMode : undefined;
@@ -475,11 +474,11 @@ export function CardImageBlock({ product, template, isCollage, shape, isCircle, 
     if (singleSlotRegion) {
       const r = singleSlotRegion;
       const fxStyle = buildPhotoEffectStyle(r);
-      const slotLeft   = (r.x / canvasW) * 100;
-      const slotTop    = (r.y / canvasH) * 100;
-      const slotWidth  = ((r.width  || (r.radius ?? 0) * 2) / canvasW) * 100;
+      const slotLeft = (r.x / canvasW) * 100;
+      const slotTop = (r.y / canvasH) * 100;
+      const slotWidth = ((r.width || (r.radius ?? 0) * 2) / canvasW) * 100;
       const slotHeight = ((r.height || (r.radius ?? 0) * 2) / canvasH) * 100;
-      const slotClip   = getRegionClipPath(r, template);
+      const slotClip = getRegionClipPath(r, template);
       return (
         <div
           className="absolute overflow-hidden"
@@ -679,7 +678,7 @@ const SORT_OPTIONS = [
 
 function SortBar({ total, sort, onSort, viewMode, onViewMode }) {
   return (
-    <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
+    <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
       <div className="flex items-center gap-3">
         <span className="text-white/40 text-sm">
           <span className="text-white font-semibold">{total}</span> products
@@ -734,10 +733,10 @@ function SortBar({ total, sort, onSort, viewMode, onViewMode }) {
 function SubcategoryPills({ categorySlug, active, subCategories }) {
   if (!subCategories || subCategories.length === 0) return null;
   return (
-    <div className="flex gap-3 overflow-x-auto pb-3 mb-6 scrollbar-hide snap-x snap-mandatory">
+    <div className="flex gap-3 overflow-x-auto pb-2 mb-2 scrollbar-hide snap-x snap-mandatory">
       <Link
         href={`/products?category=${categorySlug}`}
-        className={`flex-shrink-0 snap-start inline-flex items-center gap-2 px-4 py-3 rounded-full text-sm font-semibold border transition-all duration-200 ${!active
+        className={`flex-shrink-0 snap-start inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold border transition-all duration-200 ${!active
           ? 'bg-primary-600 border-primary-500 text-white shadow-xl shadow-primary-900/30'
           : 'glass border-white/10 text-white/70 hover:text-white hover:border-white/20'
           }`}
@@ -748,7 +747,7 @@ function SubcategoryPills({ categorySlug, active, subCategories }) {
         <Link
           key={sub.slug}
           href={`/products?category=${categorySlug}&subcategory=${sub.slug}`}
-          className={`flex-shrink-0 snap-start inline-flex items-center gap-2 px-4 py-3 rounded-full text-sm font-semibold border transition-all duration-200 ${active === sub.slug
+          className={`flex-shrink-0 snap-start inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold border transition-all duration-200 ${active === sub.slug
             ? 'bg-primary-600 border-primary-500 text-white shadow-xl shadow-primary-900/30'
             : 'glass border-white/10 text-white/70 hover:text-white hover:border-white/20'
             }`}
@@ -955,12 +954,14 @@ export default function ProductGrid({ searchParams, products = [], subCategories
   }, []);
 
   return (
-    <div>
-      {/* Quick filters */}
-      {subCategories && subCategories.length > 0 ? (
-        <SubcategoryPills categorySlug={categorySlug} active={searchParams?.subcategory} subCategories={subCategories} />
-      ) : (
-        <ShapePills active={activeShape} onChange={setActiveShape} />
+    <div className='mt'>
+      {/* Quick filters (Only show when a specific category is selected) */}
+      {categorySlug && categorySlug !== 'all' && (
+        subCategories && subCategories.length > 0 ? (
+          <SubcategoryPills categorySlug={categorySlug} active={searchParams?.subcategory} subCategories={subCategories} />
+        ) : (
+          <ShapePills active={activeShape} onChange={setActiveShape} />
+        )
       )}
 
       {/* Sort / view bar */}

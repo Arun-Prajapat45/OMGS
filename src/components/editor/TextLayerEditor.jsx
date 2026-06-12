@@ -23,8 +23,8 @@ const FONT_FAMILIES = [
 ];
 
 const COLOR_PRESETS = [
-  '#ffffff', '#000000', '#6366f1', '#f97316', '#ef4444',
-  '#22c55e', '#3b82f6', '#eab308', '#ec4899', '#a855f7',
+  '#6366f1', '#f97316', '#ef4444',
+  '#22c55e', '#5d0504ff', '#eab308', '#ec4899', '#a855f7',
 ];
 
 export default function TextLayerEditor({ textLayer }) {
@@ -93,7 +93,7 @@ export default function TextLayerEditor({ textLayer }) {
             type="number"
             min={10}
             max={300}
-            value={textLayer.fontSize || 48}
+            value={textLayer.fontSize}
             onChange={(e) =>
               update({ fontSize: Number(e.target.value) })
             }
@@ -112,8 +112,8 @@ export default function TextLayerEditor({ textLayer }) {
             })
           }
           className={`h-10 rounded-lg flex items-center justify-center transition-all ${textLayer.fontWeight === "bold"
-              ? "gradient-primary text-white"
-              : "bg-white/5 text-white/60 hover:text-white"
+            ? "gradient-primary text-white"
+            : "bg-white/5 text-white/60 hover:text-white"
             }`}
         >
           <MdFormatBold size={18} />
@@ -130,8 +130,8 @@ export default function TextLayerEditor({ textLayer }) {
             })
           }
           className={`h-10 rounded-lg flex items-center justify-center transition-all ${textLayer.fontStyle === "italic"
-              ? "gradient-primary text-white"
-              : "bg-white/5 text-white/60 hover:text-white"
+            ? "gradient-primary text-white"
+            : "bg-white/5 text-white/60 hover:text-white"
             }`}
         >
           <MdFormatItalic size={18} />
@@ -159,8 +159,8 @@ export default function TextLayerEditor({ textLayer }) {
               onClick={() => update({ color })}
               style={{ backgroundColor: color }}
               className={`w-6 h-6 rounded-full transition-all ${textLayer.color === color
-                  ? "ring-2 ring-white scale-110"
-                  : ""
+                ? "ring-2 ring-white scale-110"
+                : ""
                 }`}
             />
           ))}

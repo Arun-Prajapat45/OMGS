@@ -100,16 +100,16 @@ export default async function ProductsPage({ searchParams }) {
     <div className="pt-15 min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
         {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="font-display text-4xl font-bold text-white mb-2">
+        <div className="mb-5">
+          <h2 className="font-display text-3xl font-bold text-white mb">
             {categoryName}
-          </h1>
+          </h2>
           <p className="text-white/50">
-            Discover our premium acrylic photo products
+            Discover our premium acrylic photo products...
           </p>
         </div>
 
-        <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-2">
           <ProductGrid searchParams={sp} products={products} subCategories={subCategories} categorySlug={categorySlug} />
         </div>
       </div>
