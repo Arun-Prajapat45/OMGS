@@ -309,8 +309,14 @@ export default function ProductDetailClient({ product }) {
   // Shape elements that can have border color overrides
   const shapeElements = useMemo(() => {
     if (!template?.elements) return [];
-    return template.elements.filter((el) => ['shape', 'frame', 'background'].includes(el.type));
+    return template.elements.filter((el) => ['shape', 'frame'].includes(el.type));
   }, [template]);
+
+  useEffect(() => {
+    if (editorTab === 'borders' && shapeElements.length === 0) {
+      setEditorTab('photos');
+    }
+  }, [shapeElements, editorTab]);
 
   // ── Cart / Buy handlers ──────────────────────────────────────────────────────
   const handleToggleWishlist = async () => {
@@ -515,7 +521,7 @@ export default function ProductDetailClient({ product }) {
               >
                 {/* Tab headers */}
                 <div className="flex border-b border-white/10">
-                  {EDITOR_TABS.map((tab) => (
+                  {EDITOR_TABS.filter(tab => tab.id !== 'borders' || shapeElements.length > 0).map((tab) => (
                     <button
                       key={tab.id}
                       onClick={() => setEditorTab(tab.id)}

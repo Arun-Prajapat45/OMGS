@@ -728,10 +728,10 @@ function ShapeProps({ el, update }) {
         </Field>
       </div>
       <Field label="Stroke Width">
-        <NumberInput value={el.strokeWidth} onChange={(v) => update({ strokeWidth: v })} min={0} max={20} />
+        <NumberInput value={el.strokeWidth} onChange={(v) => update({ strokeWidth: v })} min={0} max={40} />
       </Field>
       <Field label="Corner Radius">
-        <NumberInput value={el.cornerRadius} onChange={(v) => update({ cornerRadius: v })} min={0} max={200} />
+        <NumberInput value={el.cornerRadius} onChange={(v) => update({ cornerRadius: v })} min={0} max={150} />
       </Field>
     </>
   );
