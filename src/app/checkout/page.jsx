@@ -46,11 +46,12 @@ export default function CheckoutPage() {
         body: JSON.stringify({ items, shippingAddress: addressData }),
       });
 
-      if (!orderRes.ok) throw new Error('Order creation failed');
+      if (!orderRes.ok) {
+        const errorData = await orderRes.json();
+        console.error('Order creation failed:', errorData);
+        throw new Error(errorData.error || 'Order creation failed');
+      }
       const { orderId, paymentSessionId } = await orderRes.json();
-
-      // Clear cart before redirecting
-      await clearCart();
 
       // Initialize Cashfree
       const cashfree = await load({
@@ -58,13 +59,26 @@ export default function CheckoutPage() {
       });
 
       // Redirect to Cashfree checkout
-      cashfree.checkout({
+      const result = await cashfree.checkout({
         paymentSessionId: paymentSessionId,
+        redirectTarget: '_self',
       });
 
+      // If we reach here, payment was not redirected (error or modal closed)
+      if (result.error) {
+        console.error('Payment error:', result.error);
+        toast.error(result.error.message || 'Payment failed. Please try again.');
+      }
+      if (result.paymentDetails) {
+        // Payment completed without redirect — clear cart
+        await clearCart();
+        router.push(`/orders/${orderId}?success=1`);
+      }
+
     } catch (error) {
-      console.error(error);
-      toast.error('Something went wrong. Please try again.');
+      console.error('Checkout error:', error);
+      toast.error(error.message || 'Something went wrong. Please try again.');
+    } finally {
       setProcessing(false);
     }
   };

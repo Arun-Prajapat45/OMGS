@@ -51,7 +51,7 @@ export async function POST(req) {
         customer_name: shippingAddress.fullName || "Test User"
       },
       order_meta: {
-        return_url: `${process.env.NEXTAUTH_URL?.replace('http://localhost', 'https://localhost')}/api/payments/cashfree-verify?order_id={order_id}`
+        return_url: `${process.env.NEXTAUTH_URL}/api/payments/cashfree-verify?order_id={order_id}`
       }
     };
 
@@ -68,8 +68,9 @@ export async function POST(req) {
 
     if (!cashfreeRes.ok) {
       const errorData = await cashfreeRes.json();
-      console.error('Cashfree order creation failed:', errorData);
-      return NextResponse.json({ error: 'Payment gateway error' }, { status: 500 });
+      console.error('Cashfree order creation failed:', JSON.stringify(errorData, null, 2));
+      console.error('Cashfree request payload:', JSON.stringify({ ...orderPayload, order_meta: orderPayload.order_meta }));
+      return NextResponse.json({ error: errorData.message || 'Payment gateway error', details: errorData }, { status: 500 });
     }
 
     const cashfreeOrder = await cashfreeRes.json();

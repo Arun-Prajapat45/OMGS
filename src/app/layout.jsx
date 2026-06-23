@@ -65,8 +65,8 @@ export const metadata = {
     template: '%s | Adore',
   },
   description:
-    'Create stunning custom acrylic wall photos, clocks, hexagon frames and collages. Premium print quality, fast delivery. Design your memories today.',
-  keywords: ['acrylic prints', 'custom photo gifts', 'wall decor', 'photo clock', 'hexagon frame', 'personalized gifts'],
+    'Create stunning custom acrylic wall photos, collages. Premium print quality, fast delivery. Design your memories today.',
+  keywords: ['acrylic prints', 'custom photo gifts', 'wall decor', 'personalized gifts'],
   authors: [{ name: 'Adore' }],
   openGraph: {
     type: 'website',

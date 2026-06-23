@@ -9,12 +9,19 @@ export async function middleware(req) {
   });
   const { pathname } = req.nextUrl;
 
+  // Skip middleware for API routes entirely
+  if (pathname.startsWith('/api')) {
+    return NextResponse.next();
+  }
+
   const isLoggedIn = !!token;
   const isAdmin = token?.role === 'ADMIN' || token?.role === 'MANAGER' || token?.role === 'admin' || token?.role === 'manager';
 
   const isAdminRoute = pathname.startsWith('/admin');
   const isProtectedRoute = pathname.startsWith('/account') || pathname.startsWith('/orders') || pathname.startsWith('/checkout');
-  const isAuthRoute = pathname.startsWith('/auth');
+  
+  // Only redirect logged-in users from login/register pages (NOT from forgot-password or reset-password)
+  const isLoginOrRegisterRoute = pathname === '/auth/login' || pathname === '/auth/register';
 
   let response = NextResponse.next();
 
@@ -23,7 +30,7 @@ export async function middleware(req) {
   } else if (isProtectedRoute && !isLoggedIn) {
     const callbackUrl = encodeURIComponent(pathname);
     response = NextResponse.redirect(new URL(`/auth/login?callbackUrl=${callbackUrl}`, req.url));
-  } else if (isAuthRoute && isLoggedIn) {
+  } else if (isLoginOrRegisterRoute && isLoggedIn) {
     response = NextResponse.redirect(new URL('/', req.url));
   }
 
