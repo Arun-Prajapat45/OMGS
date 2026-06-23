@@ -1,14 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
-import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { FcGoogle } from 'react-icons/fc';
 import { HiEye, HiEyeOff } from 'react-icons/hi';
 import toast from 'react-hot-toast';
 
@@ -29,6 +27,7 @@ export default function RegisterPage() {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState(null);
   const [otp, setOtp] = useState('');
+  const [resendTimer, setResendTimer] = useState(0);
 
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: zodResolver(registerSchema),
@@ -48,12 +47,40 @@ export default function RegisterPage() {
       } else {
         setFormData(data);
         setStep(2);
+        setResendTimer(30);
         toast.success('OTP sent to your email!');
       }
     } catch {
       toast.error('Something went wrong');
     }
     setLoading(false);
+  };
+
+  // Resend timer countdown
+  useEffect(() => {
+    if (resendTimer <= 0) return;
+    const interval = setInterval(() => setResendTimer((t) => t - 1), 1000);
+    return () => clearInterval(interval);
+  }, [resendTimer]);
+
+  const resendOtp = async () => {
+    if (!formData?.email || resendTimer > 0) return;
+    setResendTimer(30);
+    try {
+      const res = await fetch('/api/auth/register/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email }),
+      });
+      if (res.ok) {
+        toast.success('New OTP sent!');
+      } else {
+        const err = await res.json();
+        toast.error(err.error || 'Failed to resend OTP');
+      }
+    } catch {
+      toast.error('Failed to resend OTP');
+    }
   };
 
   const onSubmitStep2 = async (e) => {
@@ -93,19 +120,6 @@ export default function RegisterPage() {
 
           {step === 1 && (
             <>
-              <button
-                onClick={() => signIn('google', { callbackUrl: '/' })}
-                className="flex items-center justify-center gap-3 w-full py-3 rounded-xl glass border border-white/15 text-white font-medium hover:bg-white/10 transition-all mb-6"
-              >
-                <FcGoogle className="w-5 h-5" /> Continue with Google
-              </button>
-
-              <div className="flex items-center gap-3 mb-6">
-                <div className="flex-1 h-px bg-white/10" />
-                <span className="text-white/40 text-xs">or create account</span>
-                <div className="flex-1 h-px bg-white/10" />
-              </div>
-
               <form onSubmit={handleSubmit(onSubmitStep1)} className="space-y-4">
                 {[
                   { name: 'name', label: 'Full Name', type: 'text', placeholder: 'Your Name' },
@@ -193,6 +207,15 @@ export default function RegisterPage() {
                 className="w-full py-2 text-white/50 text-sm hover:text-white transition-colors"
               >
                 Back to registration
+              </button>
+
+              <button
+                type="button"
+                onClick={resendOtp}
+                disabled={resendTimer > 0}
+                className="w-full py-2 text-primary-400 text-sm hover:text-primary-300 transition-colors disabled:text-white/30 disabled:cursor-not-allowed"
+              >
+                {resendTimer > 0 ? `Resend OTP in ${resendTimer}s` : 'Resend OTP'}
               </button>
             </motion.form>
           )}
